@@ -58,12 +58,13 @@ def main():
     data_ipmi(data)
 
 
-    ### SHARES ###
+    ### CUSTOM ###
 
-    # Share last synced
-    for share in shares:
-        data_share_lastsync(data, share)
-
+    if 'custom' in local_config:
+        for key, custom_config in local_config['custom'].items():
+            params = custom_config['input']
+            if custom_config['method'] == 'file_date_modified':
+                data_file_date_modified(data, key, params[0])
 
     #
     # INSERT DATA INTO DB
@@ -168,9 +169,12 @@ def data_ipmi(data):
             data["{0}.value".format(key)] = (float(columns[1]), 'raw', columns[2])
             data["{0}.ok".format(key)] = (columns[3] == 'ok', 'bool')
 
-def data_share_lastsync(data, share):
-    result = cmd("ls -l --time-style=+'%Y-%m-%d %H:%M:%S' {0}/.lastsync | cut -d' ' -f 6,7".format(share))
-    data["share.{0}.lastsync".format(share)] = (result, 'date')
+
+### Custom methods ###
+
+def data_file_date_modified(data, key, filename):
+    result = cmd("ls -l --time-style=+'%Y-%m-%d %H:%M:%S' {0} | cut -d' ' -f 6,7".format(filename))
+    data[key] = (result, 'date')
 
 
 ### OTHER ###

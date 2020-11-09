@@ -25,5 +25,5 @@
 * hardware.ipmi.{FIELD}.value => raw (unit)
 * hardware.ipmi.{FIELD}.ok => bool
 
-### Shares
-* share.{SHARE}.lastsync => date
+### Custom Methods
+* file_date_modified(filename) => date
