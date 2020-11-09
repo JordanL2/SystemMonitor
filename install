@@ -1,0 +1,8 @@
+#!/bin/sh
+
+cd "$(dirname "$0/")"
+
+pip3 install .
+
+cp ./systemmonitor.service /etc/systemd/system/
+cp ./systemmonitor.timer /etc/systemd/system/
