@@ -12,11 +12,17 @@ datetime_format = '%Y-%m-%d %H:%M:%S'
 
 class MonitorApi():
 
-    def __init__(self, db_user, db_pass, db_host, db_schema):
-        self.db_user = db_user
-        self.db_pass = db_pass
-        self.db_host = db_host
-        self.db_schema = db_schema
+    def __init__(self, host):
+        # Load config
+        config_file = '/usr/local/etc/systemmonitor.yml'
+        with open(config_file, 'r') as fh:
+            config = yaml.load(fh)
+        host_config = config[host]
+
+        self.db_user = host_config['db']['read']['user']
+        self.db_pass = host_config['db']['read']['pass']
+        self.db_host = host_config['db']['host']
+        self.db_schema = host_config['db']['schema']
 
     def get(self, samples=None, cleanup=True):
         self.connect()
@@ -155,22 +161,11 @@ def main():
     if len(sys.argv) > 1:
         host = sys.argv[1]
 
-    # Load config
-    config_file = '/usr/local/etc/systemmonitor.yml'
-    with open(config_file, 'r') as fh:
-        config = yaml.load(fh)
-    host_config = config[host]
-
-    db_user = host_config['db']['read']['user']
-    db_pass = host_config['db']['read']['pass']
-    db_host = host_config['db']['host']
-    db_schema = host_config['db']['schema']
-
     samples = 1
     if len(sys.argv) > 2:
         samples = int(sys.argv[2])
 
-    m = MonitorApi(db_user, db_pass, db_host, db_schema)
+    m = MonitorApi(host)
     res = m.get(samples=samples)
     print(json.dumps(res, cls=DateTimeEncoder, sort_keys=True, indent=4))
 
