@@ -15,7 +15,7 @@ def get_config(host):
         config_file = os.path.expanduser(config_file)
         try:
             with open(config_file, 'r') as fh:
-                config = yaml.load(fh)
+                config = yaml.load(fh, Loader=yaml.CLoader)
             return config[host]
         except Exception:
             pass
