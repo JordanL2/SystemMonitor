@@ -1,0 +1,6 @@
+[Unit]
+Description=Runs system monitor
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/monitor

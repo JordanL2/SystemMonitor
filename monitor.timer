@@ -1,0 +1,9 @@
+[Unit]
+Description=Runs system monitor
+
+[Timer]
+OnCalendar=*:00/10
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target
