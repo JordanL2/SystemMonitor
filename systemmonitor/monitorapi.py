@@ -45,7 +45,7 @@ class MonitorApi():
         if second_earliest is None:
             raise Exception("Not enough samples - there needs to be at least two in the database")
 
-        cur.execute("SELECT taken, measurement, value_type, value, unit FROM measurements WHERE taken >= ? OR (taken >= ? AND value_type = '%s') ORDER BY taken",
+        cur.execute("SELECT taken, measurement, value_type, value, unit FROM measurements WHERE taken >= ? OR (taken = ? AND value_type = '%s') ORDER BY taken",
             (second_earliest, earliest,))
 
         data = {}
