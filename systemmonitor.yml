@@ -1,6 +1,10 @@
 localhost:
   db:
-    user: monitor_insert
-    pass: qwerty
+    push:
+      user: monitor_insert
+      pass: qwerty
+    read:
+      user: monitor_select
+      pass: qwerty
     host: localhost
     schema: monitor

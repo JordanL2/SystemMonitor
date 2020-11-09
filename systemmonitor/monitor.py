@@ -15,8 +15,8 @@ def main():
         config = yaml.load(fh)
     local_config = config['localhost']
 
-    db_user = local_config['db']['user']
-    db_pass = local_config['db']['pass']
+    db_user = local_config['db']['push']['user']
+    db_pass = local_config['db']['push']['pass']
     db_host = local_config['db']['host']
     db_schema = local_config['db']['schema']
     

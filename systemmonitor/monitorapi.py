@@ -4,12 +4,8 @@ from datetime import *
 import json
 import mariadb # pip3 install mariadb
 import sys
+import yaml
 
-
-db_user = 'monitor_select'
-db_pass = 'qwerty'
-db_host = 'henry'
-db_schema = 'monitor'
 
 datetime_format = '%Y-%m-%d %H:%M:%S'
 
@@ -155,10 +151,26 @@ class DateTimeEncoder(json.JSONEncoder):
 ### ENTRY POINT ###
 
 def main():
-    m = MonitorApi(db_user, db_pass, db_host, db_schema)
-    samples = 1
+    host = 'localhost'
     if len(sys.argv) > 1:
-        samples = int(sys.argv[1])
+        host = sys.argv[1]
+
+    # Load config
+    config_file = '/usr/local/etc/systemmonitor.yml'
+    with open(config_file, 'r') as fh:
+        config = yaml.load(fh)
+    host_config = config[host]
+
+    db_user = host_config['db']['read']['user']
+    db_pass = host_config['db']['read']['pass']
+    db_host = host_config['db']['host']
+    db_schema = host_config['db']['schema']
+
+    samples = 1
+    if len(sys.argv) > 2:
+        samples = int(sys.argv[2])
+
+    m = MonitorApi(db_user, db_pass, db_host, db_schema)
     res = m.get(samples=samples)
     print(json.dumps(res, cls=DateTimeEncoder, sort_keys=True, indent=4))
 
