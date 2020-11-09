@@ -1,0 +1,6 @@
+localhost:
+  db:
+    user: monitor_insert
+    pass: qwerty
+    host: localhost
+    schema: monitor

@@ -5,24 +5,25 @@ import json
 import mariadb
 import re
 import subprocess
-
-
-db_user = 'monitor_insert'
-db_pass = 'qwerty'
-db_host = 'localhost'
-
-shares = [
-    '/data/Download',
-    '/data/FlatpakRepo',
-    '/data/GitRepo',
-    '/data/Jordan',
-    '/data/Margaret',
-    '/data/Multimedia',
-    '/data/Public',
-]
+import yaml
 
 
 def main():
+    # Load config
+    config_file = '/usr/local/etc/systemmonitor.yml'
+    with open(config_file, 'r') as fh:
+        config = yaml.load(fh)
+    local_config = config['localhost']
+
+    db_user = local_config['db']['user']
+    db_pass = local_config['db']['pass']
+    db_host = local_config['db']['host']
+    db_schema = local_config['db']['schema']
+    
+    shares = []
+    if 'shares' in local_config:
+        shares = local_config['shares']
+
     # Get timestamp
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print(now)
@@ -79,7 +80,7 @@ def main():
             user = db_user,
             password = db_pass,
             host = db_host,
-            database = 'monitor'
+            database = db_schema
         )
     except mariadb.Error as e:
         print(f"Error connecting: {e}")

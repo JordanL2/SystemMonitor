@@ -15,6 +15,7 @@ setuptools.setup(
     packages=setuptools.find_packages() + setuptools.find_namespace_packages(include=['systemmonitor.*']),
     install_requires=[
         'mariadb',
+        'pyyaml',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
