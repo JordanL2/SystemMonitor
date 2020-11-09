@@ -14,10 +14,23 @@
 
 ```
 sudo ./install
-sudo cp ./systemmonitor.yml /usr/local/etc/
 ```
 
+Make sure you set up the config file before using.
+
 ## USAGE
+
+### Configuration
+
+There is an example config included: `systemmonitor.yml`.
+
+Configuration is looked for in these places, in order, until one is found:
+
+* \~/.config/systemmonitor.yml
+* /usr/local/etc/systemmonitor.yml
+* /etc/systemmonitor.yml
+
+Copy the example config file to one of those places. Warning: The systemmonitor (logging) service runs as root by default.
 
 ### Set up to monitor local host
 
