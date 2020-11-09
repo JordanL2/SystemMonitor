@@ -60,11 +60,6 @@ def main():
 
     ### SHARES ###
 
-    # Share Size
-    # Commented out as this takes too long to calculate
-    #for share in shares:
-    #    data_share_size(data, share)
-
     # Share last synced
     for share in shares:
         data_share_lastsync(data, share)
@@ -172,10 +167,6 @@ def data_ipmi(data):
             key = "hardware.ipmi.{0}".format(columns[0])
             data["{0}.value".format(key)] = (float(columns[1]), 'raw', columns[2])
             data["{0}.ok".format(key)] = (columns[3] == 'ok', 'bool')
-
-def data_share_size(data, share):
-    result = cmd("btrfs filesystem du -s --raw {0} | tail -n+2".format(share)).split()
-    data["share.{0}.size".format(share)] = (int(result[2]), 'bytes')
 
 def data_share_lastsync(data, share):
     result = cmd("ls -l --time-style=+'%Y-%m-%d %H:%M:%S' {0}/.lastsync | cut -d' ' -f 6,7".format(share))
