@@ -1,19 +1,16 @@
 #!/usr/bin/python3
 
+from systemmonitor.common import *
+
 from datetime import *
 import json
-import mariadb
 import re
 import subprocess
-import yaml
 
 
 def main():
     # Load config
-    config_file = '/usr/local/etc/systemmonitor.yml'
-    with open(config_file, 'r') as fh:
-        config = yaml.load(fh)
-    local_config = config['localhost']
+    local_config = get_config('localhost')
 
     db_user = local_config['db']['push']['user']
     db_pass = local_config['db']['push']['pass']

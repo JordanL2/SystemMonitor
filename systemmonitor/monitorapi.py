@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
+from systemmonitor.common import *
+
 from datetime import *
 import json
-import mariadb # pip3 install mariadb
 import sys
-import yaml
 
 
 datetime_format = '%Y-%m-%d %H:%M:%S'
@@ -14,10 +14,7 @@ class MonitorApi():
 
     def __init__(self, host):
         # Load config
-        config_file = '/usr/local/etc/systemmonitor.yml'
-        with open(config_file, 'r') as fh:
-            config = yaml.load(fh)
-        host_config = config[host]
+        host_config = get_config(host)
 
         self.db_user = host_config['db']['read']['user']
         self.db_pass = host_config['db']['read']['pass']
