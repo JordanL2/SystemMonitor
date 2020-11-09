@@ -25,6 +25,36 @@ sudo cp ./systemmonitor.yml /usr/local/etc/
 	3. Run commands in systemmonitor.sql (change the default user config/passwords if wanted)
 2. ```systemctl enable --now systemmonitor.timer```
 
+### Example Python script to read monitoring info from another host
+
+For this example the remote host is called `henry`.
+
+Config (/usr/local/etc/systemmonitor.yml):
+
+```
+henry:
+  db:
+    read:
+      user: monitor_select
+      pass: qwerty
+    host: henry
+    schema: monitor
+```
+
+Script:
+
+```
+#!/usr/bin/python3
+
+from systemmonitor.monitorapi import MonitorApi
+
+
+m = MonitorApi('henry')
+data = m.get(samples=2)
+
+print(data)
+```
+
 ## TYPES
 
 * % = numerical percentage (float)
