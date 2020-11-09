@@ -1,5 +1,27 @@
 # SystemMonitor
 
+## INSTALLATION
+
+### Requirements
+
+* python >= 3.5
+* mariadb-clients
+* python modules:
+	* mariadb
+	* pyyaml
+
+### Install
+
+```
+sudo ./install
+sudo cp ./systemmonitor.yml /usr/local/etc/
+```
+
+### Set up to monitor local host
+
+1. Set up database
+2. ```systemctl enable --now systemmonitor.timer```
+
 ## TYPES
 
 * % = numerical percentage (float)
