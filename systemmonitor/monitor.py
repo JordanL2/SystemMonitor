@@ -64,7 +64,7 @@ def main():
         for key, custom_config in local_config['custom'].items():
             params = custom_config['input']
             if custom_config['method'] == 'file_date_modified':
-                data_file_date_modified(data, key, params[0])
+                data_file_date_modified(data, key, *params)
 
     #
     # INSERT DATA INTO DB
