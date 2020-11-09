@@ -19,7 +19,10 @@ sudo cp ./systemmonitor.yml /usr/local/etc/
 
 ### Set up to monitor local host
 
-1. Set up database
+1. Set up database:
+	1. Install Maria DB server
+	2. Connect to it as root
+	3. Run commands in systemmonitor.sql (change the default user config/passwords if wanted)
 2. ```systemctl enable --now systemmonitor.timer```
 
 ## TYPES
