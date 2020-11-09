@@ -17,6 +17,8 @@ sudo ./install
 sudo cp ./systemmonitor.yml /usr/local/etc/
 ```
 
+## USAGE
+
 ### Set up to monitor local host
 
 1. Set up database:
