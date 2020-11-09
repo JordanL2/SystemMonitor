@@ -152,10 +152,16 @@ class DateTimeEncoder(json.JSONEncoder):
         return super().iterencode(self._preprocess_date(obj), _one_shot)
 
 
-if __name__ == '__main__':
+### ENTRY POINT ###
+
+def main():
     m = MonitorApi(db_user, db_pass, db_host, db_schema)
     samples = 1
     if len(sys.argv) > 1:
         samples = int(sys.argv[1])
     res = m.get(samples=samples)
     print(json.dumps(res, cls=DateTimeEncoder, sort_keys=True, indent=4))
+
+
+if __name__ == '__main__':
+    main()
