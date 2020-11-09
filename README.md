@@ -25,13 +25,13 @@ sudo cp ./systemmonitor.yml /usr/local/etc/
 	1. Install Maria DB server
 	2. Connect to it as root
 	3. Run commands in systemmonitor.sql (change the default user config/passwords if wanted)
-2. ```systemctl enable --now systemmonitor.timer```
+2. ```sudo systemctl enable --now systemmonitor.timer```
 
 ### Set up to read monitoring info from another host
 
 For this example the remote host is called `henry`.
 
-Put this config at /usr/local/etc/systemmonitor.yml
+Put this config at `/usr/local/etc/systemmonitor.yml`:
 
 ```
 henry:
