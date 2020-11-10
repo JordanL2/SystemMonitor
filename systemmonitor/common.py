@@ -13,10 +13,8 @@ def get_config(host):
     ]
     for config_file in config_files:
         config_file = os.path.expanduser(config_file)
-        try:
+        if os.path.exists(config_file):
             with open(config_file, 'r') as fh:
                 config = yaml.load(fh, Loader=yaml.CLoader)
             return config[host]
-        except OSError:
-            pass
     raise Exception("Did not find valid config file in: {}".format(', '.join(config_files)))
