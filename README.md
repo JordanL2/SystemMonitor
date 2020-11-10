@@ -6,6 +6,7 @@
 
 * python >= 3.5
 * mariadb-clients
+* yaml.h (libyaml-devel on OpenSUSE)
 * python modules:
 	* mariadb
 	* pyyaml
