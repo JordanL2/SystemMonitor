@@ -8,6 +8,14 @@ import re
 import subprocess
 
 
+class CommandException(Exception):
+
+    def __init__(self, code, error):
+        self.code = code
+        self.error = error
+        super().__init__(self, "Command returned code {} - {}".format(code, error))
+
+
 def main():
     # Load config
     local_config = get_config('localhost')
@@ -143,28 +151,34 @@ def data_disk_usage(data, device):
                 data["{0}.available".format(child_key)] = (int(child['fsavail']), 'bytes')
 
 def data_disk_smart(data, device_name):
-    key = "hardware.disk.{0}.SMART".format(device_name)
+    try:
+        key = "hardware.disk.{0}.SMART".format(device_name)
 
-    status = json.loads(cmd("smartctl -Hj {0}".format(device_name)))
-    data["{0}.passed".format(key)] = (status['smart_status']['passed'], 'bool')
+        status = json.loads(cmd("smartctl -Hj {0}".format(device_name)))
+        data["{0}.passed".format(key)] = (status['smart_status']['passed'], 'bool')
 
-    details = json.loads(cmd("smartctl -Aj {0}".format(device_name)))
-    if details['device']['type'] == 'sat':
-        for attribute in details['ata_smart_attributes']['table']:
-            data["{0}.attributes.{1}".format(key, attribute['name'])] = (float(attribute['raw']['value']), 'raw')
-    elif details['device']['type'] == 'nvme':
-        for attribute, value in details['nvme_smart_health_information_log'].items():
-            data["{0}.attributes.{1}".format(key, attribute)] = (float(value), 'raw')
+        details = json.loads(cmd("smartctl -Aj {0}".format(device_name)))
+        if details['device']['type'] == 'sat':
+            for attribute in details['ata_smart_attributes']['table']:
+                data["{0}.attributes.{1}".format(key, attribute['name'])] = (float(attribute['raw']['value']), 'raw')
+        elif details['device']['type'] == 'nvme':
+            for attribute, value in details['nvme_smart_health_information_log'].items():
+                data["{0}.attributes.{1}".format(key, attribute)] = (float(value), 'raw')
+    except CommandException as e:
+        print("SMART command failed:", e.error)
 
 def data_ipmi(data):
-    sdr_res = cmd("ipmitool -c sdr")
-    sensors = {}
-    for line in sdr_res.split("\n"):
-        columns = line.split(',')
-        if columns[3] not in ['ns', '0.0']:
-            key = "hardware.ipmi.{0}".format(columns[0])
-            data["{0}.value".format(key)] = (float(columns[1]), 'raw', columns[2])
-            data["{0}.ok".format(key)] = (columns[3] == 'ok', 'bool')
+    try:
+        sdr_res = cmd("ipmitool -c sdr")
+        sensors = {}
+        for line in sdr_res.split("\n"):
+            columns = line.split(',')
+            if columns[3] not in ['ns', '0.0']:
+                key = "hardware.ipmi.{0}".format(columns[0])
+                data["{0}.value".format(key)] = (float(columns[1]), 'raw', columns[2])
+                data["{0}.ok".format(key)] = (columns[3] == 'ok', 'bool')
+    except CommandException as e:
+        print("IPMI command failed:", e.error)
 
 
 ### Custom methods ###
@@ -177,14 +191,11 @@ def data_file_date_modified(data, key, filename):
 ### OTHER ###
 
 def cmd(command):
-    print("--- CMD:", command)
     result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout = result.stdout.decode('utf-8').rstrip("\n")
     stderr = result.stderr.decode('utf-8').rstrip("\n")
-    print("  | OUT:", stdout)
-    print("  | ERR:", stderr)
     if result.returncode != 0:
-        raise Exception("Command returned code {}".format(result.returncode))
+        raise CommandException(result.returncode, stderr)
     return stdout
 
 def get_disk_devices():
