@@ -10,7 +10,8 @@ import subprocess
 import sys
 
 
-sensor_regex = re.compile(r'(\D+)(\d+)_(.+)')
+sensor_regex = re.compile(r'(\D+)(\d*)_(.+)')
+btrfs_filesystem_regex = re.compile(r'\s*devid\s+(\S+)\s+size\s+(\S+)\s+used\s+(\S+)\s+path\s+(\S+)')
 
 
 class CommandException(Exception):
@@ -77,7 +78,9 @@ def main():
         data_disk_smart(data, device['name'])
     
     # Btrfs device stats
-    for device in disk_devices:
+    btrfs_devices = get_btrfs_devices(disk_devices)
+    err("Found btrfs devices:", btrfs_devices)
+    for device in btrfs_devices:
         data_btrfs_device_stats(data, device)
 
     # IPMI Info
@@ -207,17 +210,22 @@ def data_disk_smart(data, device_name):
         err("SMART command failed:", e.error)
 
 def data_btrfs_device_stats(data, device):
-    for child in device['children']:
-        try:
-            out = cmd("btrfs device stats {}".format(child['name']))
-            for line in out.split("\n"):
-                row = line.split()
-                measure = row[0].split('.')[1]
-                count = int(row[1])
-                key = "hardware.disk.{0}.partition.{1}.btrfs_device_stats.{2}".format(device['name'], child['name'], measure)
-                data[key] = (float(count), 'raw')
-        except CommandException as e:
-            err("btrfs command failed:", e.error)
+    try:
+        if 'partition' in device:
+            out = cmd("btrfs device stats {}".format(device['partition']))
+        else:
+            out = cmd("btrfs device stats {}".format(device['device']))
+        for line in out.split("\n"):
+            row = line.split()
+            measure = row[0].split('.')[1]
+            count = int(row[1])
+            if 'partition' in device:
+                key = "hardware.disk.{0}.partition.{1}.btrfs_device_stats.{2}".format(device['device'], device['partition'], measure)
+            else:
+                key = "hardware.disk.{0}.btrfs_device_stats.{1}".format(device['device'], measure)
+            data[key] = (float(count), 'raw')
+    except CommandException as e:
+        err("btrfs command failed:", e.error)
 
 def data_ipmi(data):
     try:
@@ -294,6 +302,33 @@ def get_disk_devices():
     result = cmd('lsblk -pnJb -o NAME,FSAVAIL,FSUSE%')
     devices = json.loads(result)
     return devices['blockdevices']
+
+def get_btrfs_devices(devices):
+    try:
+        btrfs_devices = []
+        result = cmd('btrfs filesystem show')
+        for line in result.split("\n"):
+            regex_match = btrfs_filesystem_regex.match(line)
+            if regex_match:
+                partition = regex_match.group(4)
+                for device in devices:
+                    if device['name'] == partition:
+                        btrfs_devices.append({
+                            'device': device['name'], 
+                        })
+                        break
+                    elif 'children' in device and partition in [c['name'] for c in device['children']]:
+                        btrfs_devices.append({
+                            'device': device['name'], 
+                            'partition': partition
+                        })
+                        break
+                else:
+                    raise Exception("Could not find device for partition: {}".format(partition))
+        return btrfs_devices
+    except CommandException as e:
+        err("btrfs command failed:", e.error)
+        return []
 
 def structure_data(data):
     structured_data = {}
