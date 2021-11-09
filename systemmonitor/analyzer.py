@@ -63,10 +63,12 @@ class Analyzer():
     def compress_data(self, data):            
         compressed_data = {}
 
-        if 'value' in data:
-            return (data['value'], data['type'])
-        elif 'values' in data:
-            return (data['values'], data['type'])
+        if 'type' in data and type(data['type']) == str:
+            if 'value' in data:
+                return (data['value'], data['type'])
+            elif 'values' in data:
+                latest = sorted(list(data['values'].keys()))[-1]
+                return (data['values'][latest], data['type'])
         else:
             for k, v in data.items():
                 sublevel = self.compress_data(v)
