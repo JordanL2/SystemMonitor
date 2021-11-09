@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="systemmonitor",
-    version="1.0.0",
+    version="1.1.0",
     author="Jordan Leppert",
     author_email="jordanleppert@gmail.com",
     description="A tool to log system data to a database, and an API to read it",
