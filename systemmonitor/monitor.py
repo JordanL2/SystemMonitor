@@ -86,7 +86,7 @@ def main():
         conn.commit()
         conn.close()
 
-def get(local_config):
+def get(local_config=None):
     data = dict()
 
 
@@ -121,7 +121,7 @@ def get(local_config):
 
     ### CUSTOM ###
 
-    if 'custom' in local_config:
+    if local_config is not None and 'custom' in local_config:
         for key, custom_config in local_config['custom'].items():
             params = custom_config['input']
             if custom_config['method'] == 'file_date_modified':
