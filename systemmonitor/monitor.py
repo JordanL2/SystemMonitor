@@ -2,10 +2,12 @@
 
 from systemmonitor.common import *
 
+import argparse
 from datetime import *
 import json
 import re
 import subprocess
+import sys
 
 
 class CommandException(Exception):
@@ -17,21 +19,33 @@ class CommandException(Exception):
 
 
 def main():
-    # Load config
-    local_config = get_config('localhost')
+    parser = argparse.ArgumentParser(prog='systemmonitor-push')
+    parser.add_argument('--console', dest='console', action='store_true', default=False, help='output to console rather than writing to database')
+    args = parser.parse_args()
+    write_to_console = args.console
 
-    db_user = local_config['db']['push']['user']
-    db_pass = local_config['db']['push']['pass']
-    db_host = local_config['db']['host']
-    db_schema = local_config['db']['schema']
-    
+    # Load config
+    local_config = {}
+    try:
+        local_config = get_config('localhost')
+    except Exception as e:
+        if not write_to_console:
+            raise e
+
+    if not write_to_console:
+        # Get DB config
+        db_user = local_config['db']['push']['user']
+        db_pass = local_config['db']['push']['pass']
+        db_host = local_config['db']['host']
+        db_schema = local_config['db']['schema']
+
     shares = []
     if 'shares' in local_config:
         shares = local_config['shares']
 
     # Get timestamp
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print(now)
+    err(now)
 
 
     #
@@ -51,7 +65,7 @@ def main():
 
     # Disk Usage
     disk_devices = get_disk_devices()
-    print("Found disk devices:", disk_devices)
+    err("Found disk devices:", disk_devices)
     for device in disk_devices:
         data_disk_usage(data, device)
 
@@ -71,40 +85,51 @@ def main():
             if custom_config['method'] == 'file_date_modified':
                 data_file_date_modified(data, key, *params)
 
-    #
-    # INSERT DATA INTO DB
-    #
+    if write_to_console:
 
-    # Get connection
-    try:
-        conn = mariadb.connect(
-            user = db_user,
-            password = db_pass,
-            host = db_host,
-            database = db_schema
-        )
-    except mariadb.Error as e:
-        print(f"Error connecting: {e}")
-        sys.exit(1)
+        #
+        # WRITE DATA TO CONSOLE
+        #
 
-    conn.autocommit = False
-    cur = conn.cursor()
-
-    # Insert each row into the DB
-    for key, value in data.items():
-        unit = None
-        if len(value) == 3:
-            unit = value[2]
+        structed_data = structure_data(data)
+        print(json.dumps(structed_data, indent=4))
+        
+    else:
+        
+        #
+        # INSERT DATA INTO DB
+        #
+    
+        # Get connection
         try:
-            cur.execute("INSERT INTO measurements (taken, measurement, value_type, value, unit) VALUES (?, ?, ?, ?, ?)", (now, key, value[1], str(value[0]), unit))
+            conn = mariadb.connect(
+                user = db_user,
+                password = db_pass,
+                host = db_host,
+                database = db_schema
+            )
         except mariadb.Error as e:
-            print(f"Error inserting data: {e}")
-            conn.close()
+            err(f"Error connecting: {e}")
             sys.exit(1)
-
-    # Commit and close
-    conn.commit()
-    conn.close()
+    
+        conn.autocommit = False
+        cur = conn.cursor()
+    
+        # Insert each row into the DB
+        for key, value in data.items():
+            unit = None
+            if len(value) == 3:
+                unit = value[2]
+            try:
+                cur.execute("INSERT INTO measurements (taken, measurement, value_type, value, unit) VALUES (?, ?, ?, ?, ?)", (now, key, value[1], str(value[0]), unit))
+            except mariadb.Error as e:
+                err(f"Error inserting data: {e}")
+                conn.close()
+                sys.exit(1)
+    
+        # Commit and close
+        conn.commit()
+        conn.close()
 
 
 ### DATA FETCHING ###
@@ -165,7 +190,7 @@ def data_disk_smart(data, device_name):
             for attribute, value in details['nvme_smart_health_information_log'].items():
                 data["{0}.attributes.{1}".format(key, attribute)] = (float(value), 'raw')
     except CommandException as e:
-        print("SMART command failed:", e.error)
+        err("SMART command failed:", e.error)
 
 def data_ipmi(data):
     try:
@@ -178,7 +203,7 @@ def data_ipmi(data):
                 data["{0}.value".format(key)] = (float(columns[1]), 'raw', columns[2])
                 data["{0}.ok".format(key)] = (columns[3] == 'ok', 'bool')
     except CommandException as e:
-        print("IPMI command failed:", e.error)
+        err("IPMI command failed:", e.error)
 
 
 ### Custom methods ###
@@ -202,6 +227,23 @@ def get_disk_devices():
     result = cmd('lsblk -pnJb -o NAME,FSAVAIL,FSUSE%')
     devices = json.loads(result)
     return devices['blockdevices']
+
+def structure_data(data):
+    structured_data = {}
+    
+    for key, value in data.items():
+        keys = key.split('.')
+        p = structured_data
+        for k in keys[0:-1]:
+            if k not in p:
+                p[k] = {}
+            p = p[k]
+        p[keys[-1]] = value
+    
+    return structured_data
+
+def err(*messages):
+    print(' '.join([str(m) for m in messages]), flush=True, file=sys.stderr)
 
 
 ### ENTRY POINT ###

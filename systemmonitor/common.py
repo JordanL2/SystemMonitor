@@ -16,5 +16,7 @@ def get_config(host):
         if os.path.exists(config_file):
             with open(config_file, 'r') as fh:
                 config = yaml.load(fh, Loader=yaml.CLoader)
-            return config[host]
+            if host in config:
+                return config[host]
+            return {}
     raise Exception("Did not find valid config file in: {}".format(', '.join(config_files)))
