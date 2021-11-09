@@ -188,7 +188,11 @@ def data_disk_smart(data, device_name):
                 data["{0}.attributes.{1}".format(key, attribute['name'])] = (float(attribute['raw']['value']), 'raw')
         elif details['device']['type'] == 'nvme':
             for attribute, value in details['nvme_smart_health_information_log'].items():
-                data["{0}.attributes.{1}".format(key, attribute)] = (float(value), 'raw')
+                if type(value) == list:
+                    for i, v in enumerate(value):
+                        data["{0}.attributes.{1}.{2}".format(key, attribute, i)] = (float(v), 'raw')
+                else:
+                    data["{0}.attributes.{1}".format(key, attribute)] = (float(value), 'raw')
     except CommandException as e:
         err("SMART command failed:", e.error)
 
