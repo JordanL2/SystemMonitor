@@ -50,7 +50,7 @@ def main():
     if write_to_console:
         # Write data to console
         structed_data = structure_data(now, data)
-        print(json.dumps(structed_data, indent=4))
+        print(json.dumps(structed_data, sort_keys=True, indent=4))
         
     else:
         # Insert data into DB
