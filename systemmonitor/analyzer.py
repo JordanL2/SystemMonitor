@@ -36,21 +36,27 @@ class Analyzer():
             for k, v in compressed_data.items():
                 rule_match = rule['pattern'].match(k)
                 if rule_match:
-                    broken = self.comparators[rule['comparison']](v[0], rule['value'])
-                    if broken:
-                        message = rule['message']
-                        message = message.replace('{VALUE}', str(v[0]))
-                        for i, g in enumerate(rule_match.groups()):
-                            message = message.replace('{' + str(i) + '}', str(g))
-                        broken_rules.append({
-                            'key': k,
-                            'value': v[0],
-                            'type': v[1],
-                            'comparison': rule['comparison'],
-                            'comparison_value': rule['value'],
-                            'groups': rule_match.groups(),
-                            'message': message,
-                        })
+                    rule_values = rule['value']
+                    if type(rule_values) != tuple and type(rule_values) != list:
+                        rule_values = [rule_values]
+                    for level, rule_value in enumerate(reversed(rule_values)):
+                        broken = self.comparators[rule['comparison']](v[0], rule_value)
+                        if broken:
+                            message = rule['message']
+                            message = message.replace('{VALUE}', str(v[0]))
+                            for i, g in enumerate(rule_match.groups()):
+                                message = message.replace('{' + str(i) + '}', str(g))
+                            broken_rules.append({
+                                'key': k,
+                                'value': v[0],
+                                'type': v[1],
+                                'comparison': rule['comparison'],
+                                'comparison_value': rule_value,
+                                'groups': rule_match.groups(),
+                                'message': message,
+                                'level': (len(rule_values) - level - 1),
+                            })
+                            break
         return broken_rules
 
     def compress_data(self, data):            
