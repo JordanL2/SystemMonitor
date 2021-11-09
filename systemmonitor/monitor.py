@@ -42,76 +42,18 @@ def main():
         db_pass = local_config['db']['push']['pass']
         db_host = local_config['db']['host']
         db_schema = local_config['db']['schema']
-
-    shares = []
-    if 'shares' in local_config:
-        shares = local_config['shares']
-
-    # Get timestamp
+    
+    # Get data
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    err(now)
-
-
-    #
-    # GATHER DATA
-    #
-    
-    data = dict()
-
-
-    ### HARDWARE ###
-
-    # Memory
-    data_memory_usage(data)
-
-    # CPU Utilisation
-    data_cpu_utilisation(data)
-
-    # Disk Usage
-    disk_devices = get_disk_devices()
-    err("Found disk devices:", disk_devices)
-    for device in disk_devices:
-        data_disk_usage(data, device)
-
-    # Disk SMART Info
-    for device in disk_devices:
-        data_disk_smart(data, device['name'])
-    
-    # Btrfs device stats
-    btrfs_devices = get_btrfs_devices(disk_devices)
-    err("Found btrfs devices:", btrfs_devices)
-    for device in btrfs_devices:
-        data_btrfs_device_stats(data, device)
-
-    # IPMI Info
-    data_ipmi(data)
-
-    # Sensor info
-    data_sensors(data)
-
-
-    ### CUSTOM ###
-
-    if 'custom' in local_config:
-        for key, custom_config in local_config['custom'].items():
-            params = custom_config['input']
-            if custom_config['method'] == 'file_date_modified':
-                data_file_date_modified(data, key, *params)
+    data = get(local_config)
 
     if write_to_console:
-
-        #
-        # WRITE DATA TO CONSOLE
-        #
-
+        # Write data to console
         structed_data = structure_data(now, data)
         print(json.dumps(structed_data, indent=4))
         
     else:
-        
-        #
-        # INSERT DATA INTO DB
-        #
+        # Insert data into DB
     
         # Get connection
         try:
@@ -143,6 +85,54 @@ def main():
         # Commit and close
         conn.commit()
         conn.close()
+
+def get(local_config):
+    shares = []
+    if 'shares' in local_config:
+        shares = local_config['shares']
+
+    # GATHER DATA
+    data = dict()
+
+
+    ### HARDWARE ###
+
+    # Memory
+    data_memory_usage(data)
+
+    # CPU Utilisation
+    data_cpu_utilisation(data)
+
+    # Disk Usage
+    disk_devices = get_disk_devices()
+    for device in disk_devices:
+        data_disk_usage(data, device)
+
+    # Disk SMART Info
+    for device in disk_devices:
+        data_disk_smart(data, device['name'])
+    
+    # Btrfs device stats
+    btrfs_devices = get_btrfs_devices(disk_devices)
+    for device in btrfs_devices:
+        data_btrfs_device_stats(data, device)
+
+    # IPMI Info
+    data_ipmi(data)
+
+    # Sensor info
+    data_sensors(data)
+
+
+    ### CUSTOM ###
+
+    if 'custom' in local_config:
+        for key, custom_config in local_config['custom'].items():
+            params = custom_config['input']
+            if custom_config['method'] == 'file_date_modified':
+                data_file_date_modified(data, key, *params)
+    
+    return data
 
 
 ### DATA FETCHING ###
