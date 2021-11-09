@@ -35,7 +35,7 @@ class Analyzer():
         broken_rules = []
         for rule in self.rules:
             for k, v in compressed_data.items():
-                rule_match = rule['pattern'].match(k)
+                rule_match = rule['pattern'].fullmatch(k)
                 if rule_match:
                     rule_values = rule['value']
                     if type(rule_values) != tuple and type(rule_values) != list:
