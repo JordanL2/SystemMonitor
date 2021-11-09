@@ -184,10 +184,10 @@ def data_disk_smart(data, device_name):
     try:
         key = "hardware.disk.{0}.SMART".format(device_name)
 
-        status = json.loads(cmd("smartctl -Hj {0}".format(device_name)))
+        status = json.loads(cmd("sudo smartctl -Hj {0}".format(device_name)))
         data["{0}.passed".format(key)] = (status['smart_status']['passed'], 'bool')
 
-        details = json.loads(cmd("smartctl -Aj {0}".format(device_name)))
+        details = json.loads(cmd("sudo smartctl -Aj {0}".format(device_name)))
         if details['device']['type'] == 'sat':
             for attribute in details['ata_smart_attributes']['table']:
                 data["{0}.attributes.{1}".format(key, attribute['name'])] = (float(attribute['raw']['value']), 'raw')
@@ -204,9 +204,9 @@ def data_disk_smart(data, device_name):
 def data_btrfs_device_stats(data, device):
     try:
         if 'partition' in device:
-            out = cmd("btrfs device stats {}".format(device['partition']))
+            out = cmd("sudo btrfs device stats {}".format(device['partition']))
         else:
-            out = cmd("btrfs device stats {}".format(device['device']))
+            out = cmd("sudo btrfs device stats {}".format(device['device']))
         for line in out.split("\n"):
             row = line.split()
             measure = row[0].split('.')[1]
@@ -298,7 +298,7 @@ def get_disk_devices():
 def get_btrfs_devices(devices):
     try:
         btrfs_devices = []
-        result = cmd('btrfs filesystem show')
+        result = cmd('sudo btrfs filesystem show')
         for line in result.split("\n"):
             regex_match = btrfs_filesystem_regex.match(line)
             if regex_match:
