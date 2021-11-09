@@ -49,7 +49,7 @@ def main():
 
     if write_to_console:
         # Write data to console
-        structed_data = structure_data(now, data)
+        structed_data = structure_data(data)
         print(json.dumps(structed_data, sort_keys=True, indent=4))
         
     else:
@@ -315,7 +315,7 @@ def get_btrfs_devices(devices):
         err("btrfs command failed:", e.error)
         return []
 
-def structure_data(now, data):
+def structure_data(data):
     structured_data = {}
     
     for key, value in data.items():
@@ -326,9 +326,7 @@ def structure_data(now, data):
                 p[k] = {}
             p = p[k]
         p[keys[-1]] = {
-            'values': {
-                now: value[0],
-            },
+            'value': value[0],
             'type': value[1]
         }
     
