@@ -48,12 +48,14 @@ class Analyzer():
                                 message = message(v[0], rule_match.groups())
                             else:
                                 message = message.replace('{VALUE}', str(v[0]))
+                                message = message.replace('{UNIT}', str(v[2]))
                                 for i, g in enumerate(rule_match.groups()):
                                     message = message.replace('{' + str(i) + '}', str(g))
                             broken_rules.append({
                                 'key': k,
                                 'value': v[0],
                                 'type': v[1],
+                                'unit': v[2],
                                 'comparison': rule['comparison'],
                                 'comparison_value': rule_value,
                                 'groups': rule_match.groups(),
@@ -67,11 +69,14 @@ class Analyzer():
         compressed_data = {}
 
         if 'type' in data and type(data['type']) == str:
+            unit = None
+            if 'unit' in data:
+                unit = data['unit']
             if 'value' in data:
-                return (data['value'], data['type'])
+                return (data['value'], data['type'], unit)
             elif 'values' in data:
                 latest = sorted(list(data['values'].keys()))[-1]
-                return (data['values'][latest], data['type'])
+                return (data['values'][latest], data['type'], unit)
         else:
             for k, v in data.items():
                 sublevel = self.compress_data(v)
