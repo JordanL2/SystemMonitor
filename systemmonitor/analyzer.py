@@ -44,9 +44,12 @@ class Analyzer():
                         broken = self.comparators[rule['comparison']](v[0], rule_value)
                         if broken:
                             message = rule['message']
-                            message = message.replace('{VALUE}', str(v[0]))
-                            for i, g in enumerate(rule_match.groups()):
-                                message = message.replace('{' + str(i) + '}', str(g))
+                            if callable(message):
+                                message = message(v[0], rule_match.groups())
+                            else:
+                                message = message.replace('{VALUE}', str(v[0]))
+                                for i, g in enumerate(rule_match.groups()):
+                                    message = message.replace('{' + str(i) + '}', str(g))
                             broken_rules.append({
                                 'key': k,
                                 'value': v[0],
