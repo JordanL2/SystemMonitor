@@ -12,6 +12,7 @@ class Analyzer():
         '>=': lambda v1, v2: v1 >= v2,
         '>': lambda v1, v2: v1 > v2,
         '==': lambda v1, v2: v1 == v2,
+        '!=': lambda v1, v2: v1 != v2,
     }
 
     def __init__(self):
