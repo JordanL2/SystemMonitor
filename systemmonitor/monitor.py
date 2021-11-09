@@ -242,7 +242,10 @@ def structure_data(data):
             if k not in p:
                 p[k] = {}
             p = p[k]
-        p[keys[-1]] = value
+        p[keys[-1]] = {
+            'value': value[0],
+            'type': value[1]
+        }
     
     return structured_data
 
