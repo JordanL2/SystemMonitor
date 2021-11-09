@@ -87,11 +87,6 @@ def main():
         conn.close()
 
 def get(local_config):
-    shares = []
-    if 'shares' in local_config:
-        shares = local_config['shares']
-
-    # GATHER DATA
     data = dict()
 
 
