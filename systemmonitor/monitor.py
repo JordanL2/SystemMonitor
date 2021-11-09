@@ -72,6 +72,10 @@ def main():
     # Disk SMART Info
     for device in disk_devices:
         data_disk_smart(data, device['name'])
+    
+    # Btrfs device stats
+    for device in disk_devices:
+        data_btrfs_device_stats(data, device)
 
     # IPMI Info
     data_ipmi(data)
@@ -195,6 +199,19 @@ def data_disk_smart(data, device_name):
                     data["{0}.attributes.{1}".format(key, attribute)] = (float(value), 'raw')
     except CommandException as e:
         err("SMART command failed:", e.error)
+
+def data_btrfs_device_stats(data, device):
+    for child in device['children']:
+        try:
+            out = cmd("btrfs device stats {}".format(child['name']))
+            for line in out.split("\n"):
+                row = line.split()
+                measure = row[0].split('.')[1]
+                count = int(row[1])
+                key = "hardware.disk.{0}.partition.{1}.btrfs_device_stats.{2}".format(device['name'], child['name'], measure)
+                data[key] = (float(count), 'raw')
+        except CommandException as e:
+            err("btrfs command failed:", e.error)
 
 def data_ipmi(data):
     try:
