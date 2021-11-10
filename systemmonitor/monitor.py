@@ -277,7 +277,8 @@ def data_sensors(data):
 
 def data_file_date_modified(data, key, filename):
     result = cmd("ls -l --time-style=+'%Y-%m-%d %H:%M:%S' {0} | cut -d' ' -f 6,7".format(filename))
-    data[key] = (result, 'date')
+    dt = datetime.strptime(result, '%Y-%m-%d %H:%M:%S')
+    data[key] = (dt, 'date')
 
 
 ### OTHER ###
