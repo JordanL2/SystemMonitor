@@ -51,23 +51,24 @@ class MonitorRules():
                         if not callable(comparator):
                             comparator = self.comparators[rule['comparison']]
                         # Execute rule
-                        broken = comparator(v[0], rule_threshold)
+                        broken = comparator(v['value'], rule_threshold)
                         if broken:
                             # Construct message 
                             message = rule['message']
                             if callable(message):
-                                message = message(v[0], rule_match.groups())
+                                message = message(v['value'], rule_match.groups())
                             else:
-                                message = message.replace('{VALUE}', str(v[0]))
-                                message = message.replace('{UNIT}', str(v[2]))
+                                message = message.replace('{VALUE}', str(v['value']))
+                                message = message.replace('{UNIT}', str(v['unit']))
                                 for i, g in enumerate(rule_match.groups()):
                                     message = message.replace('{' + str(i) + '}', str(g))
                             # Add rule to list of broken rules
                             broken_rules.append({
                                 'key': k,
-                                'value': v[0],
-                                'type': v[1],
-                                'unit': v[2],
+                                'value': v['value'],
+                                'type': v['type'],
+                                'unit': v['unit'],
+                                'latest': v['latest'],
                                 'comparison': rule['comparison'],
                                 'rule_threshold': rule_threshold,
                                 'groups': rule_match.groups(),
@@ -85,17 +86,26 @@ class MonitorRules():
             if 'unit' in data:
                 unit = data['unit']
             if 'value' in data:
-                return (data['value'], data['type'], unit)
+                return {
+                    'value': data['value'],
+                    'type': data['type'],
+                    'unit': unit,
+                }
             elif 'values' in data:
                 latest = sorted(list(data['values'].keys()))[-1]
-                return (data['values'][latest], data['type'], unit)
+                return {
+                    'value': data['values'][latest],
+                    'type': data['type'],
+                    'unit': unit,
+                    'latest': latest,
+                }
         else:
             for k, v in data.items():
                 sublevel = self.flatten_data(v)
-                if type(sublevel) == dict:
+                if 'type' in sublevel and type(sublevel['type']) == str:
+                    flat_data[k] = sublevel
+                else:
                     for sublevel_k, sublevel_v in sublevel.items():
                         flat_data["{}.{}".format(k, sublevel_k)] = sublevel_v
-                else:
-                    flat_data[k] = sublevel
 
         return flat_data
