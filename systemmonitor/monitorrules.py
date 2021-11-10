@@ -3,7 +3,7 @@
 import re
 
 
-class Analyzer():
+class MonitorRules():
 
     rules = []
     comparators = {
@@ -30,11 +30,11 @@ class Analyzer():
             'message': message,
         })
 
-    def analyze(self, data):
-        compressed_data = self.compress_data(data)
+    def check_rules(self, data):
+        flat_data = self.flatten_data(data)
         broken_rules = []
         for rule in self.rules:
-            for k, v in compressed_data.items():
+            for k, v in flat_data.items():
                 rule_match = rule['pattern'].fullmatch(k)
                 if rule_match:
                     rule_values = rule['value']
@@ -65,8 +65,8 @@ class Analyzer():
                             break
         return broken_rules
 
-    def compress_data(self, data):            
-        compressed_data = {}
+    def flatten_data(self, data):            
+        flat_data = {}
 
         if 'type' in data and type(data['type']) == str:
             unit = None
@@ -79,11 +79,11 @@ class Analyzer():
                 return (data['values'][latest], data['type'], unit)
         else:
             for k, v in data.items():
-                sublevel = self.compress_data(v)
+                sublevel = self.flatten_data(v)
                 if type(sublevel) == dict:
                     for sublevel_k, sublevel_v in sublevel.items():
-                        compressed_data["{}.{}".format(k, sublevel_k)] = sublevel_v
+                        flat_data["{}.{}".format(k, sublevel_k)] = sublevel_v
                 else:
-                    compressed_data[k] = sublevel
+                    flat_data[k] = sublevel
 
-        return compressed_data
+        return flat_data
