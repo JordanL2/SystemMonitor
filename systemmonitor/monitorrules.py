@@ -69,7 +69,9 @@ class MonitorRules():
                                 message = message(v[attribute], rule_match.groups())
                             else:
                                 message = message.replace('{VALUE}', str(v['value']))
+                                message = message.replace('{TYPE}', str(v['type']))
                                 message = message.replace('{UNIT}', str(v['unit']))
+                                message = message.replace('{LATEST}', str(v['latest']))
                                 for i, g in enumerate(rule_match.groups()):
                                     message = message.replace('{' + str(i) + '}', str(g))
                             # Add rule to list of broken rules
