@@ -23,11 +23,20 @@ class MonitorRules():
             self.add_rule(rule[0], rule[1], rule[2], rule[3])
 
     def add_rule(self, key_pattern, comparison, threshold, message):
+        # If key ends in #attribute then we will do the comparison against that
+        # attribute, instead of the value
+        attribute = 'value'
+        for a in ('type', 'unit', 'latest'):
+            if key_pattern.endswith('#' + a):
+                attribute = a
+                key_pattern = key_pattern[0: len(key_pattern) - len(a) - 1]
+
         self.rules.append({
             'pattern': re.compile(key_pattern),
             'comparison': comparison,
             'threshold': threshold,
             'message': message,
+            'attribute': attribute,
         })
 
     def check_rules(self, data):
@@ -35,6 +44,7 @@ class MonitorRules():
         flat_data = self.flatten_data(data)
         broken_rules = []
         for rule in self.rules:
+            attribute = rule['attribute']
             for k, v in flat_data.items():
                 rule_match = rule['pattern'].fullmatch(k)
                 if rule_match:
@@ -51,12 +61,12 @@ class MonitorRules():
                         if not callable(comparator):
                             comparator = self.comparators[rule['comparison']]
                         # Execute rule
-                        broken = comparator(v['value'], rule_threshold)
+                        broken = comparator(v[attribute], rule_threshold)
                         if broken:
                             # Construct message 
                             message = rule['message']
                             if callable(message):
-                                message = message(v['value'], rule_match.groups())
+                                message = message(v[attribute], rule_match.groups())
                             else:
                                 message = message.replace('{VALUE}', str(v['value']))
                                 message = message.replace('{UNIT}', str(v['unit']))
@@ -70,6 +80,7 @@ class MonitorRules():
                                 'unit': v['unit'],
                                 'latest': v['latest'],
                                 'comparison': rule['comparison'],
+                                'attribute': attribute,
                                 'rule_threshold': rule_threshold,
                                 'groups': rule_match.groups(),
                                 'message': message,
