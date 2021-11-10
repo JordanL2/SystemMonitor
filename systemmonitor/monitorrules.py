@@ -71,7 +71,8 @@ class MonitorRules():
                                 message = message.replace('{VALUE}', str(v['value']))
                                 message = message.replace('{TYPE}', str(v['type']))
                                 message = message.replace('{UNIT}', str(v['unit']))
-                                message = message.replace('{LATEST}', str(v['latest']))
+                                if 'latest' in v:
+                                    message = message.replace('{LATEST}', str(v['latest']))
                                 for i, g in enumerate(rule_match.groups()):
                                     message = message.replace('{' + str(i) + '}', str(g))
                             # Add rule to list of broken rules
@@ -80,7 +81,6 @@ class MonitorRules():
                                 'value': v['value'],
                                 'type': v['type'],
                                 'unit': v['unit'],
-                                'latest': v['latest'],
                                 'comparison': rule['comparison'],
                                 'attribute': attribute,
                                 'rule_threshold': rule_threshold,
@@ -88,6 +88,8 @@ class MonitorRules():
                                 'message': message,
                                 'level': (len(rule_thresholds) - level - 1),
                             })
+                            if 'latest' in v:
+                                broken_rules[-1]['latest'] = v['latest']
                             break
         return broken_rules
 
