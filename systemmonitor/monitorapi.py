@@ -131,26 +131,6 @@ class MonitorApi():
         self.connection.close()
 
 
-class DateTimeEncoder(json.JSONEncoder):
-
-    def _preprocess_date(self, obj):
-        if isinstance(obj, (date, datetime, timedelta)):
-            return str(obj)
-        elif isinstance(obj, dict):
-            return {self._preprocess_date(k): self._preprocess_date(v) for k,v in obj.items()}
-        elif isinstance(obj, list):
-            return [self._preprocess_date(i) for i in obj]
-        return obj
-
-    def default(self, obj):
-        if isinstance(obj, (date, datetime, timedelta)):
-            return str(obj)
-        return super().default(obj)
-
-    def iterencode(self, obj, _one_shot=True):
-        return super().iterencode(self._preprocess_date(obj), _one_shot)
-
-
 ### ENTRY POINT ###
 
 def main():

@@ -11,7 +11,8 @@ import sys
 
 
 sensor_regex = re.compile(r'(\D+)(\d*)_(.+)')
-btrfs_filesystem_regex = re.compile(r'\s*devid\s+(\S+)\s+size\s+(\S+)\s+used\s+(\S+)\s+path\s+(\S+)')
+btrfs_filesystem_regex = re.compile(r'Label:\s*(\S+)\s+uuid:\s+(\S+)')
+btrfs_device_regex = re.compile(r'\s*devid\s+(\S+)\s+size\s+(\S+)\s+used\s+(\S+)\s+path\s+(\S+)')
 
 
 class CommandException(Exception):
@@ -50,7 +51,7 @@ def main():
     if write_to_console:
         # Write data to console
         structed_data = structure_data(data)
-        print(json.dumps(structed_data, sort_keys=True, indent=4))
+        print(json.dumps(structed_data, cls=DateTimeEncoder, sort_keys=True, indent=4))
         
     else:
         # Insert data into DB
@@ -203,18 +204,12 @@ def data_disk_smart(data, device_name):
 
 def data_btrfs_device_stats(data, device):
     try:
-        if 'partition' in device:
-            out = cmd("sudo btrfs device stats {}".format(device['partition']))
-        else:
-            out = cmd("sudo btrfs device stats {}".format(device['device']))
+        out = cmd("sudo btrfs device stats {}".format(device['device']))
         for line in out.split("\n"):
             row = line.split()
             measure = row[0].split('.')[1]
             count = int(row[1])
-            if 'partition' in device:
-                key = "hardware.disk.{0}.partition.{1}.btrfs_device_stats.{2}".format(device['device'], device['partition'], measure)
-            else:
-                key = "hardware.disk.{0}.btrfs_device_stats.{1}".format(device['device'], measure)
+            key = "btrfs.filesystem.{0}.device.{1}.stats.{2}".format(device['filesystem'], device['device'], measure)
             data[key] = (float(count), 'raw')
     except CommandException as e:
         err("btrfs command failed:", e.error)
@@ -299,25 +294,21 @@ def get_disk_devices():
 def get_btrfs_devices(devices):
     try:
         btrfs_devices = []
+        filesystem = None
         result = cmd('sudo btrfs filesystem show')
         for line in result.split("\n"):
             regex_match = btrfs_filesystem_regex.match(line)
             if regex_match:
-                partition = regex_match.group(4)
-                for device in devices:
-                    if device['name'] == partition:
-                        btrfs_devices.append({
-                            'device': device['name'], 
-                        })
-                        break
-                    elif 'children' in device and partition in [c['name'] for c in device['children']]:
-                        btrfs_devices.append({
-                            'device': device['name'], 
-                            'partition': partition
-                        })
-                        break
-                else:
-                    raise Exception("Could not find device for partition: {}".format(partition))
+                filesystem = regex_match.group(2)
+                continue
+            regex_match = btrfs_device_regex.match(line)
+            if regex_match:
+                device = regex_match.group(4)
+                btrfs_devices.append({
+                    'filesystem': filesystem,
+                    'device': device,
+                })
+                continue
         return btrfs_devices
     except CommandException as e:
         err("btrfs command failed:", e.error)
