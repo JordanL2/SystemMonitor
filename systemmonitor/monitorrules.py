@@ -22,27 +22,38 @@ class MonitorRules():
         for rule in rules:
             self.add_rule(rule[0], rule[1], rule[2], rule[3])
 
-    def add_rule(self, key_pattern, comparison, value, message):
+    def add_rule(self, key_pattern, comparison, threshold, message):
         self.rules.append({
             'pattern': re.compile(key_pattern),
             'comparison': comparison,
-            'value': value,
+            'threshold': threshold,
             'message': message,
         })
 
     def check_rules(self, data):
+        # Flatten the hierarchical keys
         flat_data = self.flatten_data(data)
         broken_rules = []
         for rule in self.rules:
             for k, v in flat_data.items():
                 rule_match = rule['pattern'].fullmatch(k)
                 if rule_match:
-                    rule_values = rule['value']
-                    if type(rule_values) != tuple and type(rule_values) != list:
-                        rule_values = [rule_values]
-                    for level, rule_value in enumerate(reversed(rule_values)):
-                        broken = self.comparators[rule['comparison']](v[0], rule_value)
+                    # Step through all rule thresholds provided (most severe first) - if just one, put into a list
+                    rule_thresholds = rule['threshold']
+                    if type(rule_thresholds) != tuple and type(rule_thresholds) != list:
+                        rule_thresholds = [rule_thresholds]
+                    for level, rule_threshold in enumerate(reversed(rule_thresholds)):
+                        # If rule threshold is callable, resolve it
+                        if callable(rule_threshold):
+                            rule_threshold = rule_threshold(flat_data, rule_match.groups())
+                        # If comparator is not callable, get it from comparators map
+                        comparator = rule['comparison']
+                        if not callable(comparator):
+                            comparator = self.comparators[rule['comparison']]
+                        # Execute rule
+                        broken = comparator(v[0], rule_threshold)
                         if broken:
+                            # Construct message 
                             message = rule['message']
                             if callable(message):
                                 message = message(v[0], rule_match.groups())
@@ -51,16 +62,17 @@ class MonitorRules():
                                 message = message.replace('{UNIT}', str(v[2]))
                                 for i, g in enumerate(rule_match.groups()):
                                     message = message.replace('{' + str(i) + '}', str(g))
+                            # Add rule to list of broken rules
                             broken_rules.append({
                                 'key': k,
                                 'value': v[0],
                                 'type': v[1],
                                 'unit': v[2],
                                 'comparison': rule['comparison'],
-                                'comparison_value': rule_value,
+                                'rule_threshold': rule_threshold,
                                 'groups': rule_match.groups(),
                                 'message': message,
-                                'level': (len(rule_values) - level - 1),
+                                'level': (len(rule_thresholds) - level - 1),
                             })
                             break
         return broken_rules
