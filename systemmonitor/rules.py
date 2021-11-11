@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+from systemmonitor.common import *
+
 import re
 
 
@@ -41,7 +43,7 @@ class Rules():
 
     def check_rules(self, data):
         # Flatten the hierarchical keys
-        flat_data = self.flatten_data(data)
+        flat_data = flatten_data(data)
         broken_rules = []
         for rule in self.rules:
             attribute = rule['attribute']
@@ -93,34 +95,3 @@ class Rules():
                             break
         return broken_rules
 
-    def flatten_data(self, data):            
-        flat_data = {}
-
-        if 'type' in data and type(data['type']) == str:
-            unit = None
-            if 'unit' in data:
-                unit = data['unit']
-            if 'value' in data:
-                return {
-                    'value': data['value'],
-                    'type': data['type'],
-                    'unit': unit,
-                }
-            elif 'values' in data:
-                latest = sorted(list(data['values'].keys()))[-1]
-                return {
-                    'value': data['values'][latest],
-                    'type': data['type'],
-                    'unit': unit,
-                    'latest': latest,
-                }
-        else:
-            for k, v in data.items():
-                sublevel = self.flatten_data(v)
-                if 'type' in sublevel and type(sublevel['type']) == str:
-                    flat_data[k] = sublevel
-                else:
-                    for sublevel_k, sublevel_v in sublevel.items():
-                        flat_data["{}.{}".format(k, sublevel_k)] = sublevel_v
-
-        return flat_data

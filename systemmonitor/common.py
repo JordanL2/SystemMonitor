@@ -63,3 +63,56 @@ def cmd(command):
     
 def err(*messages):
     print(' '.join([str(m) for m in messages]), flush=True, file=sys.stderr)
+    
+def structure_data(data):
+    structured_data = {}
+    
+    for key, value in data.items():
+        keys = key.split('.')
+        p = structured_data
+        for k in keys[0:-1]:
+            if k not in p:
+                p[k] = {}
+            p = p[k]
+        p[keys[-1]] = {}
+        if type(value[0]) == dict:
+            p[keys[-1]]['values'] = value[0]
+        else:
+            p[keys[-1]]['value'] = value[0]
+        p[keys[-1]]['type'] = value[1]
+        if len(value) == 3:
+            p[keys[-1]]['unit'] = value[2]
+    
+    return structured_data
+
+def flatten_data( data):            
+    flat_data = {}
+
+    if 'type' in data and type(data['type']) == str:
+        unit = None
+        if 'unit' in data:
+            unit = data['unit']
+        if 'value' in data:
+            return {
+                'value': data['value'],
+                'type': data['type'],
+                'unit': unit,
+            }
+        elif 'values' in data:
+            latest = sorted(list(data['values'].keys()))[-1]
+            return {
+                'value': data['values'][latest],
+                'type': data['type'],
+                'unit': unit,
+                'latest': latest,
+            }
+    else:
+        for k, v in data.items():
+            sublevel = flatten_data(v)
+            if 'type' in sublevel and type(sublevel['type']) == str:
+                flat_data[k] = sublevel
+            else:
+                for sublevel_k, sublevel_v in sublevel.items():
+                    flat_data["{}.{}".format(k, sublevel_k)] = sublevel_v
+
+    return flat_data

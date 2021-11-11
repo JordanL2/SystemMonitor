@@ -62,7 +62,7 @@ class Collector():
         
         # Return data, structered hierarchically if required
         if structured_data:
-            return self.structure_data(data)
+            return structure_data(data)
         return data
     
     
@@ -248,20 +248,3 @@ class Collector():
         except CommandException as e:
             err("btrfs command failed:", e.error)
             return []
-    
-    def structure_data(self, data):
-        structured_data = {}
-        
-        for key, value in data.items():
-            keys = key.split('.')
-            p = structured_data
-            for k in keys[0:-1]:
-                if k not in p:
-                    p[k] = {}
-                p = p[k]
-            p[keys[-1]] = {
-                'value': value[0],
-                'type': value[1]
-            }
-        
-        return structured_data

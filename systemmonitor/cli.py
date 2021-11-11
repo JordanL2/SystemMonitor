@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 
-import argparse
-from datetime import *
-import json
 from systemmonitor.common import *
 from systemmonitor.collector import Collector
 from systemmonitor.database import Database
+
+import argparse
+from datetime import *
+import json
 
 
 def main():
