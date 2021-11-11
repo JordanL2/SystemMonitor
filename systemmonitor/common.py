@@ -11,6 +11,29 @@ import yaml
 datetime_format = '%Y-%m-%d %H:%M:%S'
 
 
+class Measurement():
+
+    def __init__(self, value, value_type, unit=None, values=None, latest=None):
+        self.value = value
+        self.type = value_type
+        self.unit = unit
+        self.values = values
+        self.latest = latest
+
+    def json(self):
+        res = {
+            'value': self.value,
+            'type': self.type,
+        }
+        if self.unit is not None:
+            res['unit'] = self.unit
+        if self.values is not None:
+            res['values'] = dict([(str(k), v) for k, v in self.values.items()])
+        if self.latest is not None:
+            res['latest'] = self.latest
+        return res
+
+
 class CommandException(Exception):
 
     def __init__(self, code, error):
@@ -24,6 +47,8 @@ class DateTimeEncoder(json.JSONEncoder):
     def _preprocess_date(self, obj):
         if isinstance(obj, (date, datetime, timedelta)):
             return str(obj)
+        if isinstance(obj, Measurement):
+            return obj.json()
         elif isinstance(obj, dict):
             return {self._preprocess_date(k): self._preprocess_date(v) for k,v in obj.items()}
         elif isinstance(obj, list):
@@ -33,6 +58,8 @@ class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, (date, datetime, timedelta)):
             return str(obj)
+        if isinstance(obj, Measurement):
+            return obj.json()
         return super().default(obj)
 
     def iterencode(self, obj, _one_shot=True):
@@ -91,12 +118,12 @@ def structure_data(data):
 def flatten_data(data):
     flat_data = {}
 
-    if 'type' in data and type(data['type']) == str:
+    if isinstance(data, Measurement):
         return data
     else:
         for k, v in data.items():
             sublevel = flatten_data(v)
-            if 'type' in sublevel and type(sublevel['type']) == str:
+            if isinstance(sublevel, Measurement):
                 flat_data[k] = sublevel
             else:
                 for sublevel_k, sublevel_v in sublevel.items():

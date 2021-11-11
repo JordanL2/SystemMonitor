@@ -60,26 +60,27 @@ class Rules():
                         if not callable(comparator):
                             comparator = self.comparators[rule['comparison']]
                         # Execute rule
-                        broken = comparator(v[attribute], rule_threshold)
+                        value_attribute = getattr(v, attribute)
+                        broken = comparator(value_attribute, rule_threshold)
                         if broken:
                             # Construct message
                             message = rule['message']
                             if callable(message):
-                                message = message(v[attribute], rule_match.groups())
+                                message = message(value_attribute, rule_match.groups())
                             else:
-                                message = message.replace('{VALUE}', str(v['value']))
-                                message = message.replace('{TYPE}', str(v['type']))
-                                if 'unit' in v:
-                                    message = message.replace('{UNIT}', str(v['unit']))
-                                if 'latest' in v:
-                                    message = message.replace('{LATEST}', str(v['latest']))
+                                message = message.replace('{VALUE}', str(v.value))
+                                message = message.replace('{TYPE}', str(v.type))
+                                message = message.replace('{UNIT}', str(v.unit))
+                                message = message.replace('{LATEST}', str(v.latest))
                                 for i, g in enumerate(rule_match.groups()):
                                     message = message.replace('{' + str(i) + '}', str(g))
                             # Add rule to list of broken rules
                             broken_rules.append({
                                 'key': k,
-                                'value': v['value'],
-                                'type': v['type'],
+                                'value': v.value,
+                                'type': v.type,
+                                'unit': v.unit,
+                                'latest': v.latest,
                                 'comparison': rule['comparison'],
                                 'attribute': attribute,
                                 'rule_threshold': rule_threshold,
@@ -87,9 +88,5 @@ class Rules():
                                 'message': message,
                                 'level': (len(rule_thresholds) - level - 1),
                             })
-                            if 'latest' in v:
-                                broken_rules[-1]['latest'] = v['latest']
-                            if 'unit' in v:
-                                broken_rules[-1]['unit'] = v['unit']
                             break
         return broken_rules

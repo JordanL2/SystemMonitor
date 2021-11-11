@@ -98,20 +98,11 @@ class Database():
 
             if add_data:
                 if measurement not in data:
-                    data[measurement] = {
-                        'value': value,
-                        'type': value_type,
-                        'values': {
-                            taken: value
-                        },
-                        'latest': taken,
-                    }
-                    if unit is not None:
-                        data[measurement]['unit'] = unit
+                    data[measurement] = Measurement(value, value_type, values={taken: value}, latest=taken, unit=unit)
                 else:
-                    data[measurement]['value'] = value
-                    data[measurement]['latest'] = taken
-                    data[measurement]['values'][taken] = value
+                    data[measurement].value = value
+                    data[measurement].latest = taken
+                    data[measurement].values[taken] = value
 
         self.disconnect_read()
 
@@ -124,11 +115,8 @@ class Database():
         cur = self.push_connection.cursor()
 
         for key, value_data in data.items():
-            unit = None
-            if 'unit' in value_data:
-                unit = value_data['unit']
             try:
-                cur.execute("INSERT INTO measurements (taken, measurement, value_type, value, unit) VALUES (?, ?, ?, ?, ?)", (now, key, value_data['type'], str(value_data['value']), unit))
+                cur.execute("INSERT INTO measurements (taken, measurement, value_type, value, unit) VALUES (?, ?, ?, ?, ?)", (now, key, value_data.type, str(value_data.value), value_data.unit))
             except mariadb.Error as e:
                 self.push_connection.close()
                 raise e
