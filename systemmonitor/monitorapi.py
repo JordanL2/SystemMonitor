@@ -123,7 +123,7 @@ class MonitorApi():
                 database = self.db_schema
             )
         except mariadb.Error as e:
-            print(f"Error connecting: {e}")
+            err(f"Error connecting: {e}")
             sys.exit(1)
         self.connection = conn
 

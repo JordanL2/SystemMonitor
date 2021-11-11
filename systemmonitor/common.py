@@ -5,23 +5,16 @@ import json
 import mariadb
 import os.path
 import yaml
+import sys
+import subprocess
 
 
-def get_config(host):
-    config_files = [
-        '~/.config/systemmonitor.yml',
-        '/usr/local/etc/systemmonitor.yml',
-        '/etc/systemmonitor.yml',
-    ]
-    for config_file in config_files:
-        config_file = os.path.expanduser(config_file)
-        if os.path.exists(config_file):
-            with open(config_file, 'r') as fh:
-                config = yaml.load(fh, Loader=yaml.CLoader)
-            if host in config:
-                return config[host]
-            return {}
-    raise Exception("Did not find valid config file in: {}".format(', '.join(config_files)))
+class CommandException(Exception):
+
+    def __init__(self, code, error):
+        self.code = code
+        self.error = error
+        super().__init__(self, "Command returned code {} - {}".format(code, error))
 
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -42,3 +35,31 @@ class DateTimeEncoder(json.JSONEncoder):
 
     def iterencode(self, obj, _one_shot=True):
         return super().iterencode(self._preprocess_date(obj), _one_shot)
+
+
+def get_config(host):
+    config_files = [
+        '~/.config/systemmonitor.yml',
+        '/usr/local/etc/systemmonitor.yml',
+        '/etc/systemmonitor.yml',
+    ]
+    for config_file in config_files:
+        config_file = os.path.expanduser(config_file)
+        if os.path.exists(config_file):
+            with open(config_file, 'r') as fh:
+                config = yaml.load(fh, Loader=yaml.CLoader)
+            if host in config:
+                return config[host]
+            return {}
+    return {}
+    
+def cmd(command):
+    result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout = result.stdout.decode('utf-8').rstrip("\n")
+    stderr = result.stderr.decode('utf-8').rstrip("\n")
+    if result.returncode != 0:
+        raise CommandException(result.returncode, stderr)
+    return stdout
+    
+def err(*messages):
+    print(' '.join([str(m) for m in messages]), flush=True, file=sys.stderr)
