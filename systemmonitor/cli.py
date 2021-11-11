@@ -28,7 +28,7 @@ def main():
 
 def collect(write_to_console):
     # Get data
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    now = datetime.now().strftime(datetime_format)
     collector = Collector()
     data = collector.collect(structured_data=write_to_console)
 

@@ -259,7 +259,7 @@ class Collector():
     
     def data_file_date_modified(self, data, key, filename):
         result = cmd("ls -l --time-style=+'%Y-%m-%d %H:%M:%S' {0} | cut -d' ' -f 6,7".format(filename))
-        dt = datetime.strptime(result, '%Y-%m-%d %H:%M:%S')
+        dt = datetime.strptime(result, datetime_format)
         data[key] = {
             'value': dt,
             'type': 'date',

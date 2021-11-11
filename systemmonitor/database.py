@@ -6,9 +6,6 @@ from datetime import *
 import sys
 
 
-datetime_format = '%Y-%m-%d %H:%M:%S'
-
-
 class Database():
 
     def __init__(self, host):

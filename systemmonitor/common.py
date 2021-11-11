@@ -9,6 +9,9 @@ import sys
 import subprocess
 
 
+datetime_format = '%Y-%m-%d %H:%M:%S'
+
+
 class CommandException(Exception):
 
     def __init__(self, code, error):
