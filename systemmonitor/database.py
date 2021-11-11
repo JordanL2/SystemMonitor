@@ -12,10 +12,10 @@ class Database():
     def __init__(self, host):
         # Load config
         host_config = get_config(host)
-        
+
         if 'db' not in host_config:
             raise Exception("No database config found")
-        
+
         self.db_host = host_config['db']['host']
         self.db_schema = host_config['db']['schema']
         self.db_read = False
@@ -61,7 +61,7 @@ class Database():
         raw = {}
 
         for (taken, measurement, value_type, value, unit) in cur:
-            
+
             add_data = True
 
             if value_type in ('%', 'raw'):
@@ -105,20 +105,20 @@ class Database():
                             taken: value
                         },
                         'latest': taken,
-                    } 
+                    }
                     if unit is not None:
                         data[measurement]['unit'] = unit
                 else:
                     data[measurement]['value'] = value
                     data[measurement]['latest'] = taken
                     data[measurement]['values'][taken] = value
-        
+
         self.disconnect_read()
 
         if structured_data:
             return structure_data(data);
         return data
-    
+
     def push(self, data, now):
         self.connect_push()
         cur = self.push_connection.cursor()
@@ -132,7 +132,7 @@ class Database():
             except mariadb.Error as e:
                 self.push_connection.close()
                 raise e
-        
+
         self.push_connection.commit()
         self.disconnect_push()
 

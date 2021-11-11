@@ -54,7 +54,7 @@ def get_config(host):
                 return config[host]
             return {}
     return {}
-    
+
 def cmd(command):
     result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout = result.stdout.decode('utf-8').rstrip("\n")
@@ -72,10 +72,10 @@ def err(*messages):
 def fail(*messages):
     err(*messages)
     sys.exit(1)
-    
+
 def structure_data(data):
     structured_data = {}
-    
+
     for key, value_data in data.items():
         keys = key.split('.')
         p = structured_data
@@ -85,7 +85,7 @@ def structure_data(data):
             p = p[k]
 
         p[keys[-1]] = value_data
-    
+
     return structured_data
 
 def flatten_data(data):

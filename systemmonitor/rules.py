@@ -62,7 +62,7 @@ class Rules():
                         # Execute rule
                         broken = comparator(v[attribute], rule_threshold)
                         if broken:
-                            # Construct message 
+                            # Construct message
                             message = rule['message']
                             if callable(message):
                                 message = message(v[attribute], rule_match.groups())

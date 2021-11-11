@@ -18,56 +18,56 @@ class Collector():
         # Load config
         local_config = get_config('localhost')
         self.local_config = local_config
-    
+
     def collect(self, structured_data=True):
         data = dict()
-    
-    
+
+
         ### HARDWARE ###
-    
+
         # Memory
         self.data_memory_usage(data)
-    
+
         # CPU Utilisation
         self.data_cpu_utilisation(data)
-    
+
         # Disk Usage
         disk_devices = self.get_disk_devices()
         for device in disk_devices:
             self.data_disk_usage(data, device)
-    
+
         # Disk SMART Info
         for device in disk_devices:
             self.data_disk_smart(data, device['name'])
-        
+
         # Btrfs device stats
         btrfs_filesystems = self.get_btrfs_devices(disk_devices)
         self.data_btrfs_device_stats(data, btrfs_filesystems)
-    
+
         # IPMI Info
         self.data_ipmi(data)
-    
+
         # Sensor info
         self.data_sensors(data)
-    
-    
+
+
         ### CUSTOM ###
-    
+
         if self.local_config is not None and 'custom' in self.local_config:
             for key, custom_config in self.local_config['custom'].items():
                 params = custom_config['input']
                 if custom_config['method'] == 'file_date_modified':
                     self.data_file_date_modified(data, key, *params)
-        
-        
+
+
         # Return data, structered hierarchically if required
         if structured_data:
             return structure_data(data)
         return data
-    
-    
+
+
     ### DATA FETCHING ###
-    
+
     def data_memory_usage(self, data):
         result = cmd('free -wb | head -n2 | tail -n+2')
         line_regex = re.compile('^Mem:\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$')
@@ -80,7 +80,7 @@ class Collector():
                     'value': int(line_match.group(i + 1)) / total * 100,
                     'type': '%',
                 }
-    
+
     def data_cpu_utilisation(self, data):
         clock_ticks_per_second = float(cmd('getconf CLK_TCK'))
         field_names = ('user', 'nice', 'system', 'idle', 'iowait', 'irq', 'softirq', 'steal', 'guest', 'guest_nice')
@@ -110,7 +110,7 @@ class Collector():
                     'value': data[measurement_name]['value'] / cpu_count,
                     'type': data[measurement_name]['type'],
                 }
-    
+
     def data_disk_usage(self, data, device):
         key = "hardware.disk.{0}".format(device['name'])
         if device['fsuse%'] is not None:
@@ -136,17 +136,17 @@ class Collector():
                         'value': int(child['fsavail']),
                         'type': 'bytes',
                     }
-    
+
     def data_disk_smart(self, data, device_name):
         try:
             key = "hardware.disk.{0}.SMART".format(device_name)
-    
+
             status = json.loads(cmd("sudo smartctl -Hj {0}".format(device_name)))
             data["{0}.passed".format(key)] = {
                 'value': status['smart_status']['passed'],
                 'type': 'bool',
             }
-    
+
             details = json.loads(cmd("sudo smartctl -Aj {0}".format(device_name)))
             if details['device']['type'] == 'sat':
                 for attribute in details['ata_smart_attributes']['table']:
@@ -169,7 +169,7 @@ class Collector():
                         }
         except CommandException as e:
             err("SMART command failed:", e.error)
-    
+
     def data_btrfs_device_stats(self, data, filesystems):
         for filesystem in filesystems:
             for device in filesystems[filesystem]['devices']:
@@ -190,7 +190,7 @@ class Collector():
                         }
                 except CommandException as e:
                     err("btrfs command failed:", e.error)
-    
+
     def data_ipmi(self, data):
         try:
             sdr_res = cmd("ipmitool -c sdr")
@@ -210,7 +210,7 @@ class Collector():
                     }
         except CommandException as e:
             err("IPMI command failed:", e.error)
-    
+
     def data_sensors(self, data):
         try:
             boundaries = ['min', 'input', 'max', 'crit']
@@ -228,13 +228,13 @@ class Collector():
                             reading_type = reading_match.group(1)
                             reading_type_num = reading_match.group(2)
                             reading_boundary = reading_match.group(3)
-                            
+
                             if 'type' not in sensor_data[module][sensor]:
                                 sensor_data[module][sensor]['type'] = reading_type
                             else:
                                 if reading_type != sensor_data[module][sensor]['type']:
                                     raise Exception("Multiple reading types in {}/{}".format(module, sensor))
-                            
+
                             if reading_boundary in boundaries:
                                 sensor_data[module][sensor][reading_boundary] = reading_v
                         else:
@@ -253,10 +253,10 @@ class Collector():
                         }
         except CommandException as e:
             err("Sensors command failed:", e.error)
-        
-    
+
+
     ### Custom methods ###
-    
+
     def data_file_date_modified(self, data, key, filename):
         result = cmd("ls -l --time-style=+'%Y-%m-%d %H:%M:%S' {0} | cut -d' ' -f 6,7".format(filename))
         dt = datetime.strptime(result, datetime_format)
@@ -264,15 +264,15 @@ class Collector():
             'value': dt,
             'type': 'date',
         }
-    
-    
+
+
     ### OTHER ###
-    
+
     def get_disk_devices(self):
         result = cmd('lsblk -pnJb -o NAME,FSAVAIL,FSUSE%')
         devices = json.loads(result)
         return devices['blockdevices']
-    
+
     def get_btrfs_devices(self, devices):
         try:
             filesystems = {}
