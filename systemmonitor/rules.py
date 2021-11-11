@@ -72,7 +72,8 @@ class Rules():
                             else:
                                 message = message.replace('{VALUE}', str(v['value']))
                                 message = message.replace('{TYPE}', str(v['type']))
-                                message = message.replace('{UNIT}', str(v['unit']))
+                                if 'unit' in v:
+                                    message = message.replace('{UNIT}', str(v['unit']))
                                 if 'latest' in v:
                                     message = message.replace('{LATEST}', str(v['latest']))
                                 for i, g in enumerate(rule_match.groups()):
@@ -82,7 +83,6 @@ class Rules():
                                 'key': k,
                                 'value': v['value'],
                                 'type': v['type'],
-                                'unit': v['unit'],
                                 'comparison': rule['comparison'],
                                 'attribute': attribute,
                                 'rule_threshold': rule_threshold,
@@ -92,6 +92,8 @@ class Rules():
                             })
                             if 'latest' in v:
                                 broken_rules[-1]['latest'] = v['latest']
+                            if 'unit' in v:
+                                broken_rules[-1]['unit'] = v['unit']
                             break
         return broken_rules
 

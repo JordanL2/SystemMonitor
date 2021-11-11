@@ -76,7 +76,6 @@ class Database():
                     value = (float(value) - raw[measurement][previous_time]) / delta_seconds
                 else:
                     add_data = False
-                if measurement not in raw:
                     raw[measurement] = {}
                 raw[measurement][taken] = float(value)
 
@@ -100,14 +99,18 @@ class Database():
 
             if add_data:
                 if measurement not in data:
-                    values = {}
-                    values[taken] = value
+                    data[measurement] = {
+                        'value': value,
+                        'values': {
+                            taken: value
+                        },
+                        'type': value_type,
+                        'latest': taken,
+                    } 
                     if unit is not None:
-                        data[measurement] = (values, value_type, unit)
-                    else:
-                        data[measurement] = (values, value_type)
+                        data[measurement]['unit'] = unit
                 else:
-                    data[measurement][0][taken] = value
+                    data[measurement]['values'][taken] = value
         
         self.disconnect_read()
 
@@ -119,12 +122,12 @@ class Database():
         self.connect_push()
         cur = self.push_connection.cursor()
 
-        for key, value in data.items():
+        for key, value_data in data.items():
             unit = None
-            if len(value) == 3:
-                unit = value[2]
+            if 'unit' in value_data:
+                unit = value_data['unit']
             try:
-                cur.execute("INSERT INTO measurements (taken, measurement, value_type, value, unit) VALUES (?, ?, ?, ?, ?)", (now, key, value[1], str(value[0]), unit))
+                cur.execute("INSERT INTO measurements (taken, measurement, value_type, value, unit) VALUES (?, ?, ?, ?, ?)", (now, key, value_data['type'], str(value_data['value']), unit))
             except mariadb.Error as e:
                 self.push_connection.close()
                 raise e

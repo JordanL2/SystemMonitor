@@ -75,20 +75,7 @@ def structure_data(data):
                 p[k] = {}
             p = p[k]
 
-        p[keys[-1]] = {}
-        value = value_data[0]
-        value_type = value_data[1]
-        unit = None
-        if len(value_data) == 3:
-            unit = value_data[2]
-        
-        if type(value) == dict:
-            p[keys[-1]]['values'] = value
-        else:
-            p[keys[-1]]['value'] = value
-        p[keys[-1]]['type'] = value_type
-        if unit is not None:
-            p[keys[-1]]['unit'] = unit
+        p[keys[-1]] = value_data
     
     return structured_data
 
@@ -96,23 +83,7 @@ def flatten_data(data):
     flat_data = {}
 
     if 'type' in data and type(data['type']) == str:
-        unit = None
-        if 'unit' in data:
-            unit = data['unit']
-        if 'value' in data:
-            return {
-                'value': data['value'],
-                'type': data['type'],
-                'unit': unit,
-            }
-        elif 'values' in data:
-            latest = sorted(list(data['values'].keys()))[-1]
-            return {
-                'value': data['values'][latest],
-                'type': data['type'],
-                'unit': unit,
-                'latest': latest,
-            }
+        return data
     else:
         for k, v in data.items():
             sublevel = flatten_data(v)
