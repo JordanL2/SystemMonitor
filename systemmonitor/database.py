@@ -67,14 +67,15 @@ class Database():
                 value = float(value)
 
             elif value_type == '%s':
+                original_value = float(value)
                 if measurement in raw:
-                    previous_time = list(raw[measurement].keys())[-1]
+                    previous_time = sorted(list(raw[measurement].keys()))[-1]
                     delta_seconds = (taken - previous_time).total_seconds()
                     value = (float(value) - raw[measurement][previous_time]) / delta_seconds
                 else:
                     add_data = False
                     raw[measurement] = {}
-                raw[measurement][taken] = float(value)
+                raw[measurement][taken] = original_value
 
             elif value_type in ('bytes'):
                 value = int(value)
@@ -98,15 +99,17 @@ class Database():
                 if measurement not in data:
                     data[measurement] = {
                         'value': value,
+                        'type': value_type,
                         'values': {
                             taken: value
                         },
-                        'type': value_type,
                         'latest': taken,
                     } 
                     if unit is not None:
                         data[measurement]['unit'] = unit
                 else:
+                    data[measurement]['value'] = value
+                    data[measurement]['latest'] = taken
                     data[measurement]['values'][taken] = value
         
         self.disconnect_read()
