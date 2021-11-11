@@ -3,4 +3,4 @@ Description=Runs system monitor
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/systemmonitor-push
+ExecStart=/usr/bin/systemmonitor collect
