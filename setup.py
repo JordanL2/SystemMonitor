@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="systemmonitor",
-    version="1.1.0",
+    version="1.2.0",
     author="Jordan Leppert",
     author_email="jordanleppert@gmail.com",
     description="A tool to log system data to a database, and an API to read it",
@@ -24,7 +24,6 @@ setuptools.setup(
     ],
     python_requires='>=3.5',
     entry_points = {'console_scripts': [
-        'systemmonitor-push=systemmonitor.monitor:main',
-        'systemmonitor-read=systemmonitor.monitorapi:main',
+        'systemmonitor=systemmonitor.cli:main',
         ], },
 )

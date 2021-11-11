@@ -2,72 +2,14 @@
 
 from systemmonitor.common import *
 
-import argparse
 from datetime import *
-import json
 import re
-import sys
 
 
 sensor_regex = re.compile(r'(\D+)(\d*)_(.+)')
 btrfs_filesystem_regex = re.compile(r'Label:\s*(\S+)\s+uuid:\s+(\S+)')
 btrfs_device_regex = re.compile(r'\s*devid\s+(\S+)\s+size\s+(\S+)\s+used\s+(\S+)\s+path\s+(\S+)')
 btrfs_device_missing_regex = re.compile(r'\s*\*\*\*\s*Some devices missing\s*')
-
-
-
-def main():
-    parser = argparse.ArgumentParser(prog='systemmonitor-push')
-    parser.add_argument('--console', dest='console', action='store_true', default=False, help='output to console rather than writing to database')
-    args = parser.parse_args()
-    write_to_console = args.console
-    
-    # Get data
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    collector = Collector()
-    data = collector.collect(structured_data=write_to_console)
-
-    if write_to_console:
-        # Write data to console
-        print(json.dumps(data, cls=DateTimeEncoder, sort_keys=True, indent=4))
-        
-    else:
-        # Insert data into DB
-        db_user = collector.local_config['db']['push']['user']
-        db_pass = collector.local_config['db']['push']['pass']
-        db_host = collector.local_config['db']['host']
-        db_schema = collector.local_config['db']['schema']
-    
-        # Get connection
-        try:
-            conn = mariadb.connect(
-                user = db_user,
-                password = db_pass,
-                host = db_host,
-                database = db_schema
-            )
-        except mariadb.Error as e:
-            err(f"Error connecting: {e}")
-            sys.exit(1)
-    
-        conn.autocommit = False
-        cur = conn.cursor()
-    
-        # Insert each row into the DB
-        for key, value in data.items():
-            unit = None
-            if len(value) == 3:
-                unit = value[2]
-            try:
-                cur.execute("INSERT INTO measurements (taken, measurement, value_type, value, unit) VALUES (?, ?, ?, ?, ?)", (now, key, value[1], str(value[0]), unit))
-            except mariadb.Error as e:
-                err(f"Error inserting data: {e}")
-                conn.close()
-                sys.exit(1)
-    
-        # Commit and close
-        conn.commit()
-        conn.close()
 
 
 class Collector():
@@ -323,9 +265,3 @@ class Collector():
             }
         
         return structured_data
-    
-
-### ENTRY POINT ###
-
-if __name__ == '__main__':
-    main()

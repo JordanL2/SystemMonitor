@@ -3,8 +3,6 @@
 from systemmonitor.common import *
 
 from datetime import *
-import json
-import sys
 
 
 datetime_format = '%Y-%m-%d %H:%M:%S'
@@ -129,23 +127,3 @@ class Database():
 
     def disconnect(self):
         self.connection.close()
-
-
-### ENTRY POINT ###
-
-def main():
-    host = 'localhost'
-    if len(sys.argv) > 1:
-        host = sys.argv[1]
-
-    samples = 1
-    if len(sys.argv) > 2:
-        samples = int(sys.argv[2])
-
-    database = Database(host)
-    res = database.fetch(samples=samples)
-    print(json.dumps(res, cls=DateTimeEncoder, sort_keys=True, indent=4))
-
-
-if __name__ == '__main__':
-    main()
