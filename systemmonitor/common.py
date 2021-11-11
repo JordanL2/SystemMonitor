@@ -3,9 +3,9 @@
 from datetime import *
 import json
 import os.path
-import yaml
-import sys
 import subprocess
+import sys
+import yaml
 
 
 datetime_format = '%Y-%m-%d %H:%M:%S'
