@@ -45,7 +45,7 @@ Copy the example config file to one of those places. Warning: The systemmonitor 
 
 For this example the remote host is called `henry`.
 
-Put this config at `/usr/local/etc/systemmonitor.yml`:
+Put this config at `/usr/local/etc/systemmonitor.yml` on your local machine:
 
 ```
 henry:
@@ -62,27 +62,46 @@ You can now read the remote host's monitoring info using the command line tool, 
 ### Using command line tool
 
 ```
-systemmonitor-read <HOSTNAME> [<SAMPLES>]
+usage: systemmonitor [-h] [--console] [--samples SAMPLES] {collect,fetch} [host]
+
+positional arguments:
+  {collect,fetch}    action to perform
+  host               host to fetch data for
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --console          output collected data to console rather than writing to database
+  --samples SAMPLES  number of samples to fetch from database
 ```
 
-Example:
+#### Examples
+
+Collect data, and write to database
 ```
-systemmonitor-read henry 2
+systemmonitor collect
+```
+
+Collect data, and output to the console in JSON format
+```
+systemmonitor collect --console
+```
+
+Fetch the last five samples of data collected for host `henry`
+
+```
+systemmonitor fetch henry --samples 5
 ```
 
 ### Example Python script using library
 
-
-Script:
-
 ```
 #!/usr/bin/python3
 
-from systemmonitor.monitorapi import MonitorApi
+from systemmonitor.database import Database
 
 
-m = MonitorApi('henry')
-data = m.get(samples=2)
+database = Database('henry')
+data = database.fetch(samples=2)
 
 print(data)
 ```
