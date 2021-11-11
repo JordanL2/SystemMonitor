@@ -20,7 +20,6 @@ def main():
     write_to_console = args.console
     samples = args.samples
     
-    #print(action, host, write_to_console, samples)
     if action == 'collect':
         collect(write_to_console)
     elif action == 'fetch':
@@ -38,41 +37,8 @@ def collect(write_to_console):
         
     else:
         # Insert data into DB
-        db_user = collector.local_config['db']['push']['user']
-        db_pass = collector.local_config['db']['push']['pass']
-        db_host = collector.local_config['db']['host']
-        db_schema = collector.local_config['db']['schema']
-    
-        # Get connection
-        try:
-            conn = mariadb.connect(
-                user = db_user,
-                password = db_pass,
-                host = db_host,
-                database = db_schema
-            )
-        except mariadb.Error as e:
-            err(f"Error connecting: {e}")
-            sys.exit(1)
-    
-        conn.autocommit = False
-        cur = conn.cursor()
-    
-        # Insert each row into the DB
-        for key, value in data.items():
-            unit = None
-            if len(value) == 3:
-                unit = value[2]
-            try:
-                cur.execute("INSERT INTO measurements (taken, measurement, value_type, value, unit) VALUES (?, ?, ?, ?, ?)", (now, key, value[1], str(value[0]), unit))
-            except mariadb.Error as e:
-                err(f"Error inserting data: {e}")
-                conn.close()
-                sys.exit(1)
-    
-        # Commit and close
-        conn.commit()
-        conn.close()
+        database = Database('localhost')
+        database.push(data, now)
 
 def fetch(host, samples):
     database = Database(host)

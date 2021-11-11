@@ -3,6 +3,7 @@
 from systemmonitor.common import *
 
 from datetime import *
+import sys
 
 
 datetime_format = '%Y-%m-%d %H:%M:%S'
@@ -13,16 +14,28 @@ class Database():
     def __init__(self, host):
         # Load config
         host_config = get_config(host)
-
-        self.db_user = host_config['db']['read']['user']
-        self.db_pass = host_config['db']['read']['pass']
+        
+        if 'db' not in host_config:
+            raise Exception("No database config found")
+        
         self.db_host = host_config['db']['host']
         self.db_schema = host_config['db']['schema']
+        self.db_read = False
+        self.db_push = False
+
+        if 'read' in host_config['db']:
+            self.db_read = True
+            self.db_read_user = host_config['db']['read']['user']
+            self.db_read_pass = host_config['db']['read']['pass']
+
+        if 'push' in host_config['db']:
+            self.db_push = True
+            self.db_push_user = host_config['db']['push']['user']
+            self.db_push_pass = host_config['db']['push']['pass']
 
     def fetch(self, samples=None, cleanup=True):
-        self.connect()
-        
-        cur = self.connection.cursor()
+        self.connect_read()
+        cur = self.read_connection.cursor()
 
         earliest = None
         second_earliest = None
@@ -97,7 +110,7 @@ class Database():
                     raise Exception("Varying unit not supported")
                 pointer['unit'] = unit
         
-        self.disconnect()
+        self.disconnect_read()
 
         if cleanup:
             self.cleanup(data)
@@ -111,19 +124,55 @@ class Database():
         else:
             for k in data:
                 self.cleanup(data[k])
+    
+    def push(self, data, now):
+        self.connect_push()
+        cur = self.push_connection.cursor()
 
-    def connect(self):
+        for key, value in data.items():
+            unit = None
+            if len(value) == 3:
+                unit = value[2]
+            try:
+                cur.execute("INSERT INTO measurements (taken, measurement, value_type, value, unit) VALUES (?, ?, ?, ?, ?)", (now, key, value[1], str(value[0]), unit))
+            except mariadb.Error as e:
+                self.push_connection.close()
+                raise e
+        
+        self.push_connection.commit()
+        self.disconnect_push()
+
+    def connect_read(self):
+        if not self.db_read:
+            raise Exception("Read DB config not provided")
         try:
             conn = mariadb.connect(
-                user = self.db_user,
-                password = self.db_pass,
+                user = self.db_read_user,
+                password = self.db_read_pass,
                 host = self.db_host,
                 database = self.db_schema
             )
         except mariadb.Error as e:
-            err(f"Error connecting: {e}")
-            sys.exit(1)
-        self.connection = conn
+            raise e
+        self.read_connection = conn
 
-    def disconnect(self):
-        self.connection.close()
+    def disconnect_read(self):
+        self.read_connection.close()
+
+    def connect_push(self):
+        if not self.db_push:
+            raise Exception("Push DB config not provided")
+        try:
+            conn = mariadb.connect(
+                user = self.db_push_user,
+                password = self.db_push_pass,
+                host = self.db_host,
+                database = self.db_schema
+            )
+            conn.autocommit = False
+        except mariadb.Error as e:
+            raise e
+        self.push_connection = conn
+
+    def disconnect_push(self):
+        self.push_connection.close()
