@@ -63,7 +63,10 @@ def cmd(command):
     if result.returncode != 0:
         raise CommandException(result.returncode, stderr)
     return stdout
-    
+
+def out(*messages):
+    print(' '.join([str(m) for m in messages]), flush=True)
+
 def err(*messages):
     print(' '.join([str(m) for m in messages]), flush=True, file=sys.stderr)
     

@@ -17,9 +17,6 @@ class Rules():
         '!=': lambda v1, v2: v1 != v2,
     }
 
-    def __init__(self):
-        pass
-
     def import_rules(self, rules):
         for rule in rules:
             self.add_rule(rule[0], rule[1], rule[2], rule[3])
