@@ -69,6 +69,10 @@ def out(*messages):
 
 def err(*messages):
     print(' '.join([str(m) for m in messages]), flush=True, file=sys.stderr)
+
+def fail(*messages):
+    err(*messages)
+    sys.exit(1)
     
 def structure_data(data):
     structured_data = {}

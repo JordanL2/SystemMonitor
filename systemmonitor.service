@@ -3,4 +3,4 @@ Description=Runs system monitor
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/systemmonitor collect
+ExecStart=/usr/bin/systemmonitor collect --output database

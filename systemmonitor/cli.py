@@ -14,35 +14,38 @@ def main():
 
     parser.add_argument('action', choices=['collect', 'fetch'], help='action to perform')
     parser.add_argument('host', nargs='?', help='host to fetch data for')
-    parser.add_argument('--console', dest='console', action='store_true', default=False, help='output collected data to console rather than writing to database')
-    parser.add_argument('--samples', dest='samples', type=int, default=1, help='number of samples to fetch from database')
+    parser.add_argument('--output', dest='output', choices=['database', 'json'], default='json', help='where the collected data is output to (default: json)')
+    parser.add_argument('--samples', dest='samples', type=int, default=1, help='number of samples to fetch from database (default: 1)')
 
     args = parser.parse_args()
 
     action = args.action
     host = args.host
-    write_to_console = args.console
+    output = args.output
     samples = args.samples
-    
+
     if action == 'collect':
-        collect(write_to_console)
+        collect(output)
     elif action == 'fetch':
         fetch(host, samples)
+    else:
+        fail("Not recognised action:", action)
 
-def collect(write_to_console):
-    # Get data
+def collect(output):
     now = datetime.now().strftime(datetime_format)
     collector = Collector()
-    data = collector.collect(structured_data=write_to_console)
+    need_structured_data = output != 'database'
+    data = collector.collect(structured_data=need_structured_data)
 
-    if write_to_console:
-        # Write data to console
+    if output == 'json':
+        # Write data to console in JSON format
         out(json.dumps(data, cls=DateTimeEncoder, sort_keys=True, indent=4))
-        
-    else:
+    elif output == 'database':
         # Insert data into DB
         database = Database('localhost')
         database.push(data, now)
+    else:
+        fail("Not recognised output:", output)
 
 def fetch(host, samples):
     database = Database(host)
