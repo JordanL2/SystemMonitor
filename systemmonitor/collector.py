@@ -24,8 +24,8 @@ def main():
     
     # Get data
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    monitor = Monitor()
-    data = monitor.get(structured_data=write_to_console)
+    collector = Collector()
+    data = collector.collect(structured_data=write_to_console)
 
     if write_to_console:
         # Write data to console
@@ -33,10 +33,10 @@ def main():
         
     else:
         # Insert data into DB
-        db_user = monitor.local_config['db']['push']['user']
-        db_pass = monitor.local_config['db']['push']['pass']
-        db_host = monitor.local_config['db']['host']
-        db_schema = monitor.local_config['db']['schema']
+        db_user = collector.local_config['db']['push']['user']
+        db_pass = collector.local_config['db']['push']['pass']
+        db_host = collector.local_config['db']['host']
+        db_schema = collector.local_config['db']['schema']
     
         # Get connection
         try:
@@ -70,14 +70,14 @@ def main():
         conn.close()
 
 
-class Monitor():
+class Collector():
 
     def __init__(self):
         # Load config
         local_config = get_config('localhost')
         self.local_config = local_config
     
-    def get(self, structured_data=True):
+    def collect(self, structured_data=True):
         data = dict()
     
     

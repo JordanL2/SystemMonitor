@@ -3,7 +3,7 @@
 import re
 
 
-class MonitorRules():
+class Rules():
 
     rules = []
     comparators = {

@@ -10,7 +10,7 @@ import sys
 datetime_format = '%Y-%m-%d %H:%M:%S'
 
 
-class MonitorApi():
+class Database():
 
     def __init__(self, host):
         # Load config
@@ -21,7 +21,7 @@ class MonitorApi():
         self.db_host = host_config['db']['host']
         self.db_schema = host_config['db']['schema']
 
-    def get(self, samples=None, cleanup=True):
+    def fetch(self, samples=None, cleanup=True):
         self.connect()
         
         cur = self.connection.cursor()
@@ -142,8 +142,8 @@ def main():
     if len(sys.argv) > 2:
         samples = int(sys.argv[2])
 
-    m = MonitorApi(host)
-    res = m.get(samples=samples)
+    database = Database(host)
+    res = database.fetch(samples=samples)
     print(json.dumps(res, cls=DateTimeEncoder, sort_keys=True, indent=4))
 
 
