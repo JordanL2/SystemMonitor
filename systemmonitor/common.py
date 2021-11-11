@@ -67,25 +67,32 @@ def err(*messages):
 def structure_data(data):
     structured_data = {}
     
-    for key, value in data.items():
+    for key, value_data in data.items():
         keys = key.split('.')
         p = structured_data
         for k in keys[0:-1]:
             if k not in p:
                 p[k] = {}
             p = p[k]
+
         p[keys[-1]] = {}
-        if type(value[0]) == dict:
-            p[keys[-1]]['values'] = value[0]
+        value = value_data[0]
+        value_type = value_data[1]
+        unit = None
+        if len(value_data) == 3:
+            unit = value_data[2]
+        
+        if type(value) == dict:
+            p[keys[-1]]['values'] = value
         else:
-            p[keys[-1]]['value'] = value[0]
-        p[keys[-1]]['type'] = value[1]
-        if len(value) == 3:
-            p[keys[-1]]['unit'] = value[2]
+            p[keys[-1]]['value'] = value
+        p[keys[-1]]['type'] = value_type
+        if unit is not None:
+            p[keys[-1]]['unit'] = unit
     
     return structured_data
 
-def flatten_data( data):            
+def flatten_data(data):
     flat_data = {}
 
     if 'type' in data and type(data['type']) == str:

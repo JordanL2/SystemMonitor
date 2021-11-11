@@ -33,7 +33,7 @@ class Database():
             self.db_push_user = host_config['db']['push']['user']
             self.db_push_pass = host_config['db']['push']['pass']
 
-    def fetch(self, samples=None, cleanup=True):
+    def fetch(self, samples=None, structured_data=True):
         self.connect_read()
         cur = self.read_connection.cursor()
 
@@ -60,70 +60,60 @@ class Database():
             (second_earliest, earliest,))
 
         data = {}
+        raw = {}
 
         for (taken, measurement, value_type, value, unit) in cur:
-            category = measurement.split('.')
-
-            pointer = data
-            for cat in category:
-                if cat not in pointer:
-                    pointer[cat] = {}
-                pointer = pointer[cat]
-
-            pointer['type'] = value_type
-
-            if 'values' not in pointer:
-                pointer['values'] = {}
+            
+            add_data = True
 
             if value_type in ('%', 'raw'):
-                pointer['values'][taken] = float(value)
+                value = float(value)
 
             elif value_type == '%s':
-                if 'raw' not in pointer:
-                    pointer['raw'] = {}
-                pointer['raw'][taken] = float(value)
-                if len(pointer['raw'].keys()) > 1:
-                    previous_time = list(pointer['raw'].keys())[-2]
+                if measurement in raw:
+                    previous_time = list(raw[measurement].keys())[-1]
                     delta_seconds = (taken - previous_time).total_seconds()
-                    pointer['values'][taken] = (float(value) - pointer['raw'][previous_time]) / delta_seconds
+                    value = (float(value) - raw[measurement][previous_time]) / delta_seconds
+                else:
+                    add_data = False
+                if measurement not in raw:
+                    raw[measurement] = {}
+                raw[measurement][taken] = float(value)
 
             elif value_type in ('bytes'):
-                pointer['values'][taken] = int(value)
+                value = int(value)
 
             elif value_type == 'bool':
-                pointer['values'][taken] = (value == 'True')
+                value = (value == 'True')
 
             elif value_type == 'date':
                 if value == '':
-                    pointer['values'][taken] = None
+                    value = None
                 else:
-                    pointer['values'][taken] = datetime.strptime(value, datetime_format)
+                    value = datetime.strptime(value, datetime_format)
 
             elif value_type == 'string':
-                pointer['values'][taken] = value
+                value = value
 
             else:
                 raise Exception("Invalid type: {}".format(value_type))
 
-            if unit is not None:
-                if 'unit' in pointer and pointer['unit'] != unit:
-                    raise Exception("Varying unit not supported")
-                pointer['unit'] = unit
+            if add_data:
+                if measurement not in data:
+                    values = {}
+                    values[taken] = value
+                    if unit is not None:
+                        data[measurement] = (values, value_type, unit)
+                    else:
+                        data[measurement] = (values, value_type)
+                else:
+                    data[measurement][0][taken] = value
         
         self.disconnect_read()
 
-        if cleanup:
-            self.cleanup(data)
-
-        return data;
-
-    def cleanup(self, data):
-        if 'type' in data and isinstance(data['type'], str):
-            if 'raw' in data:
-                del data['raw']
-        else:
-            for k in data:
-                self.cleanup(data[k])
+        if structured_data:
+            return structure_data(data);
+        return data
     
     def push(self, data, now):
         self.connect_push()
