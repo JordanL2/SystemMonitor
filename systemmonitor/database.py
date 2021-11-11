@@ -3,6 +3,7 @@
 from systemmonitor.common import *
 
 from datetime import *
+import mariadb
 import sys
 
 

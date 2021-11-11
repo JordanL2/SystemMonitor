@@ -2,7 +2,6 @@
 
 from datetime import *
 import json
-import mariadb
 import os.path
 import yaml
 import sys
