@@ -117,93 +117,97 @@ class Collector():
                     data["{0}.available".format(child_key)] = Measurement(int(child['fsavail']), 'bytes')
 
     def data_disk_smart(self, data, device_name):
-        try:
-            key = "hardware.disk.{0}.SMART".format(device_name)
+        if check_installed("smartctl"):
+            try:
+                key = "hardware.disk.{0}.SMART".format(device_name)
 
-            status = json.loads(cmd("sudo smartctl -Hj {0}".format(device_name)))
-            data["{0}.passed".format(key)] = Measurement(status['smart_status']['passed'], 'bool')
+                status = json.loads(cmd("sudo smartctl -Hj {0}".format(device_name)))
+                data["{0}.passed".format(key)] = Measurement(status['smart_status']['passed'], 'bool')
 
-            details = json.loads(cmd("sudo smartctl -Aj {0}".format(device_name)))
-            if details['device']['type'] == 'sat':
-                for attribute in details['ata_smart_attributes']['table']:
-                    data["{0}.attributes.{1}".format(key, attribute['name'])] = Measurement(float(attribute['raw']['value']), 'raw')
-            elif details['device']['type'] == 'nvme':
-                for attribute, value in details['nvme_smart_health_information_log'].items():
-                    if type(value) == list:
-                        for i, v in enumerate(value):
-                            data["{0}.attributes.{1}.{2}".format(key, attribute, i)] = Measurement(float(v), 'raw')
-                    else:
-                        data["{0}.attributes.{1}".format(key, attribute)] = Measurement(float(value), 'raw')
-        except CommandException as e:
-            err("SMART command failed:", e.error)
+                details = json.loads(cmd("sudo smartctl -Aj {0}".format(device_name)))
+                if details['device']['type'] == 'sat':
+                    for attribute in details['ata_smart_attributes']['table']:
+                        data["{0}.attributes.{1}".format(key, attribute['name'])] = Measurement(float(attribute['raw']['value']), 'raw')
+                elif details['device']['type'] == 'nvme':
+                    for attribute, value in details['nvme_smart_health_information_log'].items():
+                        if type(value) == list:
+                            for i, v in enumerate(value):
+                                data["{0}.attributes.{1}.{2}".format(key, attribute, i)] = Measurement(float(v), 'raw')
+                        else:
+                            data["{0}.attributes.{1}".format(key, attribute)] = Measurement(float(value), 'raw')
+            except CommandException as e:
+                err("SMART command failed:", e.error)
 
     def data_btrfs_device_stats(self, data, filesystems):
-        for filesystem in filesystems:
-            for device in filesystems[filesystem]['devices']:
-                data["btrfs.filesystem.{0}.devices_missing".format(filesystem)] = Measurement(filesystems[filesystem]['devices_missing'], 'bool')
-                try:
-                    out = cmd("sudo btrfs device stats {}".format(device))
-                    for line in out.split("\n"):
-                        row = line.split()
-                        measure = row[0].split('.')[1]
-                        count = int(row[1])
-                        key = "btrfs.filesystem.{0}.device.{1}.stats.{2}".format(filesystem, device, measure)
-                        data[key] = Measurement(float(count), 'raw')
-                except CommandException as e:
-                    err("btrfs command failed:", e.error)
+        if check_installed("btrfs"):
+            for filesystem in filesystems:
+                for device in filesystems[filesystem]['devices']:
+                    data["btrfs.filesystem.{0}.devices_missing".format(filesystem)] = Measurement(filesystems[filesystem]['devices_missing'], 'bool')
+                    try:
+                        out = cmd("sudo btrfs device stats {}".format(device))
+                        for line in out.split("\n"):
+                            row = line.split()
+                            measure = row[0].split('.')[1]
+                            count = int(row[1])
+                            key = "btrfs.filesystem.{0}.device.{1}.stats.{2}".format(filesystem, device, measure)
+                            data[key] = Measurement(float(count), 'raw')
+                    except CommandException as e:
+                        err("btrfs command failed:", e.error)
 
     def data_ipmi(self, data):
-        try:
-            sdr_res = cmd("ipmitool -c sdr")
-            sensors = {}
-            for line in sdr_res.split("\n"):
-                columns = line.split(',')
-                if columns[3] not in ['ns', '0.0']:
-                    key = "hardware.ipmi.{0}".format(columns[0])
-                    data["{0}.value".format(key)] = Measurement(float(columns[1]), 'raw', unit=columns[2])
-                    data["{0}.ok".format(key)] = Measurement(columns[3] == 'ok', 'bool')
-        except CommandException as e:
-            err("IPMI command failed:", e.error)
+        if check_installed("ipmitool"):
+            try:
+                sdr_res = cmd("ipmitool -c sdr")
+                sensors = {}
+                for line in sdr_res.split("\n"):
+                    columns = line.split(',')
+                    if columns[3] not in ['ns', '0.0']:
+                        key = "hardware.ipmi.{0}".format(columns[0])
+                        data["{0}.value".format(key)] = Measurement(float(columns[1]), 'raw', unit=columns[2])
+                        data["{0}.ok".format(key)] = Measurement(columns[3] == 'ok', 'bool')
+            except CommandException as e:
+                err("IPMI command failed:", e.error)
 
     def data_sensors(self, data):
-        try:
-            boundaries = ['min', 'input', 'max', 'crit']
-            sensors = json.loads(cmd("sensors -j"))
-            sensor_data = {}
-            for module in sensors:
-                sensor_data[module] = {}
-                for sensor in sensors[module]:
-                    if sensor == 'Adapter':
-                        continue
-                    sensor_data[module][sensor] = {}
-                    for reading_k, reading_v in sensors[module][sensor].items():
-                        reading_match = sensor_regex.match(reading_k)
-                        if reading_match:
-                            reading_type = reading_match.group(1)
-                            reading_type_num = reading_match.group(2)
-                            reading_boundary = reading_match.group(3)
-
-                            if 'type' not in sensor_data[module][sensor]:
-                                sensor_data[module][sensor]['type'] = reading_type
-                            else:
-                                if reading_type != sensor_data[module][sensor]['type']:
-                                    raise Exception("Multiple reading types in {}/{}".format(module, sensor))
-
-                            if reading_boundary in boundaries:
-                                sensor_data[module][sensor][reading_boundary] = reading_v
-                        else:
-                            raise Exception("Could not parse label '{}'".format(reading_k))
-            for module in sensor_data:
-                for sensor in sensor_data[module]:
-                    sensor_type = sensor_data[module][sensor]['type']
-                    for reading_boundary in sensor_data[module][sensor]:
-                        if reading_boundary == 'type':
+        if check_installed("sensors"):
+            try:
+                boundaries = ['min', 'input', 'max', 'crit']
+                sensors = json.loads(cmd("sensors -j"))
+                sensor_data = {}
+                for module in sensors:
+                    sensor_data[module] = {}
+                    for sensor in sensors[module]:
+                        if sensor == 'Adapter':
                             continue
-                        key = "hardware.sensors.{0}.{1}_{2}.{3}".format(module, sensor, sensor_type, reading_boundary)
-                        value = sensor_data[module][sensor][reading_boundary]
-                        data[key] = Measurement(float(value), 'raw')
-        except CommandException as e:
-            err("Sensors command failed:", e.error)
+                        sensor_data[module][sensor] = {}
+                        for reading_k, reading_v in sensors[module][sensor].items():
+                            reading_match = sensor_regex.match(reading_k)
+                            if reading_match:
+                                reading_type = reading_match.group(1)
+                                reading_type_num = reading_match.group(2)
+                                reading_boundary = reading_match.group(3)
+
+                                if 'type' not in sensor_data[module][sensor]:
+                                    sensor_data[module][sensor]['type'] = reading_type
+                                else:
+                                    if reading_type != sensor_data[module][sensor]['type']:
+                                        raise Exception("Multiple reading types in {}/{}".format(module, sensor))
+
+                                if reading_boundary in boundaries:
+                                    sensor_data[module][sensor][reading_boundary] = reading_v
+                            else:
+                                raise Exception("Could not parse label '{}'".format(reading_k))
+                for module in sensor_data:
+                    for sensor in sensor_data[module]:
+                        sensor_type = sensor_data[module][sensor]['type']
+                        for reading_boundary in sensor_data[module][sensor]:
+                            if reading_boundary == 'type':
+                                continue
+                            key = "hardware.sensors.{0}.{1}_{2}.{3}".format(module, sensor, sensor_type, reading_boundary)
+                            value = sensor_data[module][sensor][reading_boundary]
+                            data[key] = Measurement(float(value), 'raw')
+            except CommandException as e:
+                err("Sensors command failed:", e.error)
 
 
     ### Custom methods ###

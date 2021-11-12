@@ -90,6 +90,13 @@ def cmd(command):
         raise CommandException(result.returncode, stderr)
     return stdout
 
+def check_installed(command):
+    try:
+        cmd("command -v {}".format(command))
+    except CommandException as e:
+        return False
+    return True
+
 def out(*messages):
     print(' '.join([str(m) for m in messages]), flush=True)
 
