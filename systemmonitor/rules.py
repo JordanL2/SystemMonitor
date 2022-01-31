@@ -61,7 +61,11 @@ class Rules():
                             comparator = self.comparators[rule['comparison']]
                         # Execute rule
                         value_attribute = getattr(v, attribute)
-                        broken = comparator(value_attribute, rule_threshold)
+                        # Error if value is None
+                        if value_attribute is None:
+                            broken = True
+                        else:
+                            broken = comparator(value_attribute, rule_threshold)
                         if broken:
                             # Construct message
                             message = rule['message']
