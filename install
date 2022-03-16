@@ -2,7 +2,7 @@
 
 cd "$(dirname "$0/")"
 
-pip3 install .
+sudo pip3 install .
 
-cp ./systemmonitor.service /etc/systemd/system/
-cp ./systemmonitor.timer /etc/systemd/system/
+sudo cp ./systemmonitor.service /etc/systemd/system/
+sudo cp ./systemmonitor.timer /etc/systemd/system/
