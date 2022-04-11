@@ -50,6 +50,9 @@ class Collector():
         # Sensor info
         self.data_sensors(data)
 
+        # Openrazer
+        self.data_open_razer(data)
+
 
         ### CUSTOM ###
 
@@ -208,6 +211,20 @@ class Collector():
                             data[key] = Measurement(float(value), 'raw')
             except CommandException as e:
                 err("Sensors command failed:", e.error)
+
+    def data_open_razer(self, data):
+        try:
+            import openrazer.client
+
+            devices = openrazer.client.DeviceManager().devices
+
+            for device in devices:
+                if device.has("battery"):
+                    device_name = device.name.replace('.', '_')
+                    key = "hardware.peripherals.{}.{}.battery".format(device._type, device_name)
+                    data[key] = Measurement(float(device.battery_level), '%')
+        except ImportError:
+            pass
 
 
     ### Custom methods ###
