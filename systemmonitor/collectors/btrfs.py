@@ -11,9 +11,10 @@ btrfs_device_missing_regex = re.compile(r'\s*\*\*\*\s*Some devices missing\s*')
 class BtrfsCollector(AbstractCollector):
 
     def collect(self, data):
-        disk_devices = self.get_disk_devices()
-        btrfs_filesystems = self.get_btrfs_devices(disk_devices)
-        self.data_btrfs_device_stats(data, btrfs_filesystems)
+        if check_installed("btrfs"):
+            disk_devices = self.get_disk_devices()
+            btrfs_filesystems = self.get_btrfs_devices(disk_devices)
+            self.data_btrfs_device_stats(data, btrfs_filesystems)
 
     def get_disk_devices(self):
         result = cmd('lsblk -pnJb -o NAME,FSAVAIL,FSUSE%')
@@ -49,17 +50,16 @@ class BtrfsCollector(AbstractCollector):
             return []
 
     def data_btrfs_device_stats(self, data, filesystems):
-        if check_installed("btrfs"):
-            for filesystem in filesystems:
-                for device in filesystems[filesystem]['devices']:
-                    data["btrfs.filesystem.{0}.devices_missing".format(filesystem)] = Measurement(filesystems[filesystem]['devices_missing'], 'bool')
-                    try:
-                        out = cmd("sudo btrfs device stats {}".format(device))
-                        for line in out.split("\n"):
-                            row = line.split()
-                            measure = row[0].split('.')[1]
-                            count = int(row[1])
-                            key = "btrfs.filesystem.{0}.device.{1}.stats.{2}".format(filesystem, device, measure)
-                            data[key] = Measurement(float(count), 'raw')
-                    except CommandException as e:
-                        err("btrfs command failed:", e.error)
+        for filesystem in filesystems:
+            for device in filesystems[filesystem]['devices']:
+                data["btrfs.filesystem.{0}.devices_missing".format(filesystem)] = Measurement(filesystems[filesystem]['devices_missing'], 'bool')
+                try:
+                    out = cmd("sudo btrfs device stats {}".format(device))
+                    for line in out.split("\n"):
+                        row = line.split()
+                        measure = row[0].split('.')[1]
+                        count = int(row[1])
+                        key = "btrfs.filesystem.{0}.device.{1}.stats.{2}".format(filesystem, device, measure)
+                        data[key] = Measurement(float(count), 'raw')
+                except CommandException as e:
+                    err("btrfs command failed:", e.error)
