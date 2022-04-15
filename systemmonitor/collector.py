@@ -5,8 +5,8 @@ from systemmonitor.common import *
 from datetime import *
 from importlib import import_module
 import inspect
-import pkgutil
 import os.path
+import pkgutil
 import re
 
 
@@ -16,7 +16,7 @@ class Collector():
         # Load config
         local_config = get_config('localhost')
         self.local_config = local_config
-        self.collectors = []
+        self.collectors = set()
         self.scan_for_collectors([
             os.path.dirname(__file__) + '/collectors',
         ])
@@ -29,13 +29,13 @@ class Collector():
             for i in dir(imported_module):
                 collector = getattr(imported_module, i)
                 if inspect.isclass(collector) and collector != AbstractCollector and issubclass(collector, AbstractCollector):
-                    self.collectors.append(collector)
+                    self.collectors.add(collector)
 
     def collect(self, structured_data=True):
         data = dict()
 
         # Run all collectors
-        for collector in self.collectors:
+        for collector in sorted(list(self.collectors), key=lambda x: x.__name__.lower()):
             collector().collect(data)
 
         # Custom collection
