@@ -4,5 +4,7 @@ cd "$(dirname "$0/")"
 
 sudo pip3 install .
 
-sudo cp ./systemmonitor.service /etc/systemd/system/
-sudo cp ./systemmonitor.timer /etc/systemd/system/
+PATHTOEXECUTABLE=`which system-monitor | sed -e "s/\//\\\\\\\\\//g"`
+sudo cp systemmonitor.service /etc/systemd/system/
+sudo sed -i -e "s/\/usr\/bin\/system-monitor/$PATHTOEXECUTABLE/" /etc/systemd/system/systemmonitor.service
+sudo cp systemmonitor.timer /etc/systemd/system/
