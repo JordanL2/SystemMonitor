@@ -2,7 +2,8 @@
 
 cd "$(dirname "$0/")"
 
-sudo pip3 install .
+pippath=`which pip3`
+sudo $pippath install .
 
 PATHTOEXECUTABLE=`which system-monitor | sed -e "s/\//\\\\\\\\\//g"`
 sudo cp systemmonitor.service /etc/systemd/system/
