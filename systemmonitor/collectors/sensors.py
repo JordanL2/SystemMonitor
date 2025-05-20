@@ -3,7 +3,7 @@
 from systemmonitor.collector import *
 
 
-sensor_regex = re.compile(r'(\D+)(\d*)_(.+)')
+sensor_regex = re.compile(r'(\D+)(\d*)(?:_(.+))?')
 
 
 class SensorsCollector(AbstractCollector):
